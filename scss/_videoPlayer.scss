@@ -1,0 +1,204 @@
+.video-wrapper {
+  position: relative;
+  aspect-ratio: 16/9;
+  background-color: var(--primary-bg);
+  overflow: hidden;
+  cursor: none; // Hide cursor by default
+
+  &.show-cursor {
+    cursor: auto !important; // Show cursor when active
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: inherit; // Inherit from parent (will be pointer or none)
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    position: absolute;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    height: 2.5rem;
+    padding: 0;
+    background: var(--overlay-bg);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s, transform 0.3s;
+    gap: 0.5rem;
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--text-color);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.3s;
+      margin: 0 0.5rem;
+
+      &:hover {
+        color: var(--accent-color);
+      }
+
+      @media (max-width: 768px) {
+        font-size: 1.2rem;
+      }
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 0.5rem;
+      background: var(--button-bg);
+      border-radius: 10px;
+      margin: 0 1rem;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      z-index: 0;
+
+      @media (max-width: 768px) {
+        height: 0.3rem;
+      }
+
+      .buffer-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        z-index: 0;
+
+        div {
+          position: absolute;
+          top: 0;
+          border-radius: 10px;
+          height: 100%;
+          background-color: var(--accent-color-transparent);
+          transition: left 0.2s ease, width 0.3s ease;
+        }
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: var(--progress, 0%);
+        background: var(--accent-color);
+        border-radius: 10px;
+        z-index: 1;
+        pointer-events: none;
+        transition: width 0.2s ease;
+      }
+    }
+
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .volume-slider {
+        display: none;
+        width: 80px;
+
+        input[type="range"] {
+          display: block;
+          width: 100%;
+          height: 0.5rem;
+          margin: 0;
+          -webkit-appearance: none;
+          appearance: none;
+          background: var(--button-bg);
+          border-radius: 0.25rem;
+          outline: none;
+          opacity: 0.8;
+          transition: opacity 0.2s;
+
+          &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 0.5rem;
+            height: 0.5rem;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+          }
+
+          &::-moz-range-thumb {
+            width: 0.5rem;
+            height: 0.5rem;
+            background: var(--accent-color);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+          }
+
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+
+      &.visible .volume-slider {
+        display: flex;
+      }
+    }
+  }
+
+  &:hover .controls {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.controls:hover {
+  cursor: auto !important;
+}
+
+.fullscreen {
+  z-index: 9999999;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  margin-left: 0;
+  margin-bottom: 0;
+  background-color: var(--primary-bg);
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin-top: 0;
+
+  nav {
+    display: none;
+  }
+
+  .leftVideoSection {
+    width: 100vw;
+    height: 100vh;
+
+    .video-wrapper {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      overflow: hidden;
+      margin: 0;
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    }
+  }
+}

@@ -1,0 +1,280 @@
+@import "./scss/global";
+@import "./scss/videoPlayer";
+@import "./scss/nav";
+
+body {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: row;
+  flex-direction: row;
+  -webkit-flex-wrap: nowrap;
+  flex-wrap: nowrap;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-align-content: stretch;
+  align-content: stretch;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+
+  margin-top: 3.5rem;
+
+  .leftVideoSection {
+    width: 70vw;
+    height: auto;
+
+    .video-wrapper {
+      margin: 1rem;
+      border-radius: .5rem;
+    }
+
+    .belowVideo {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-direction: row;
+      flex-direction: row;
+      -webkit-flex-wrap: nowrap;
+      flex-wrap: nowrap;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+      -webkit-align-content: stretch;
+      align-content: stretch;
+      -webkit-align-items: center;
+      align-items: center;
+
+      gap: .5rem;
+      margin-left: 1rem;
+
+      .videoContent {
+        width: 100%;
+
+        .videoTitle {
+          font-weight: 500;
+          font-size: 1.25rem;
+        }
+
+        .timeStamp {
+          font-size: .75rem;
+        }
+      }
+
+      .videoSettings {
+        button {
+          display: -webkit-flex;
+          display: flex;
+          -webkit-flex-direction: row;
+          flex-direction: row;
+          -webkit-flex-wrap: nowrap;
+          flex-wrap: nowrap;
+          -webkit-justify-content: center;
+          justify-content: center;
+          -webkit-align-content: stretch;
+          align-content: stretch;
+          -webkit-align-items: center;
+          align-items: center;
+
+          height: 3rem;
+          width: 3rem;
+          border-radius: .25rem;
+
+          ion-icon {
+            font-size: 1.5rem;
+          }
+        }
+      }
+    }
+  }
+
+  .rightVideoSection {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: flex-start;
+    align-content: flex-start;
+    -webkit-align-items: center;
+    align-items: center;
+
+    width: 30vw;
+    height: auto;
+
+    .PostLoadedAreaVideoPage {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
+      width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+
+      .post-card {
+        // flex: 0 0 calc(25% - 0.75rem);
+        width: 100%;
+        box-sizing: border-box;
+        transition: transform 0.2s ease;
+        background-color: var(--secondary-bg);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+
+        &:hover {
+          transform: scale(1.02);
+          border-color: var(--hover-border-color);
+        }
+
+        a {
+          display: flex;
+          flex-direction: column;
+          text-decoration: none;
+
+          img {
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem 0.5rem 0 0;
+            object-fit: cover;
+          }
+
+          h3 {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            color: var(--link-color);
+
+            &:hover {
+              color: var(--link-hover-color);
+            }
+          }
+        }
+
+        p.post-date {
+          padding: 0 1rem 1rem;
+          font-size: 0.85rem;
+          color: var(--text-color);
+          opacity: 0.6;
+        }
+      }
+
+      .noPosts {
+        text-align: center;
+        color: var(--placeholder-color);
+        font-size: 1.2rem;
+        margin: 2rem;
+        width: 100%;
+      }
+    }
+  }
+}
+
+.settingsPopup {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-flex-wrap: nowrap;
+  flex-wrap: nowrap;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-align-content: stretch;
+  align-content: stretch;
+  -webkit-align-items: center;
+  align-items: center;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--overlay-bg);
+
+  z-index: 1000;
+
+  .container {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: center;
+    align-items: center;
+
+    padding: 1rem;
+    gap: 1rem;
+    border-radius: .5rem;
+    border: .1rem solid var(--border-color);
+    background-color: var(--primary-bg);
+
+    .VideoSettings {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-direction: row;
+      flex-direction: row;
+      -webkit-flex-wrap: nowrap;
+      flex-wrap: nowrap;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+      -webkit-align-content: stretch;
+      align-content: stretch;
+      -webkit-align-items: center;
+      align-items: center;
+
+      width: 100%;
+      gap: 1rem;
+
+      button {
+        display: -webkit-flex;
+        display: flex;
+        -webkit-flex-direction: row;
+        flex-direction: row;
+        -webkit-flex-wrap: nowrap;
+        flex-wrap: nowrap;
+        -webkit-justify-content: center;
+        justify-content: center;
+        -webkit-align-content: stretch;
+        align-content: stretch;
+        -webkit-align-items: center;
+        align-items: center;
+
+        height: 2.5rem;
+        width: 2.5rem;
+        background-color: var(--button-bg);
+        border: .1rem solid var(--border-color);
+
+        ion-icon {
+          font-size: 1.5rem;
+        }
+      }
+    }
+
+    .deleteVideoContainer {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-direction: column;
+      flex-direction: column;
+      -webkit-flex-wrap: nowrap;
+      flex-wrap: nowrap;
+      -webkit-justify-content: center;
+      justify-content: center;
+      -webkit-align-content: stretch;
+      align-content: stretch;
+      -webkit-align-items: center;
+      align-items: center;
+
+      gap: 1rem;
+
+      button {
+        padding: .5rem 1rem;
+        border-radius: .25rem;
+        border: .1rem solid var(--border-color);
+      }
+    }
+  }
+}
+
+@import "./scss/mediaVideo";
