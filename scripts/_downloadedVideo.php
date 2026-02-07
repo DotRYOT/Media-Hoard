@@ -56,10 +56,11 @@ if (!$uploadSuccess) {
 }
 
 // Build the FFmpeg command
-$ffmpegPath = "ffmpeg";
-$thumbnailCommand = "{$ffmpegPath} -ss $frameTime -i " . escapeshellarg($uploadVideoPath) . " ";
-$thumbnailCommand .= "-vf \"scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2\" ";
-$thumbnailCommand .= "-vframes 1 " . escapeshellarg($frameFilePath);
+$ffmpegPath = "ffmpeg.exe";
+$filterString = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
+$thumbnailCommand = "{$ffmpegPath} -ss {$frameTime} -i " . escapeshellarg($uploadVideoPath) . " ";
+$thumbnailCommand .= "-vf " . escapeshellarg($filterString) . " ";
+$thumbnailCommand .= "-vframes 1 " . escapeshellarg($frameFilePath) . " 2>&1";
 
 // Execute the command
 exec($thumbnailCommand, $output, $returnVar);

@@ -209,7 +209,6 @@ function displayMessage($type = 'message')
         $success = $_GET['success'];
         echo '
   <div class="successAlert">
-    <ion-icon name="help-outline"></ion-icon>
     <h2>' . $success . '</h2>
     <a href="./">
         <ion-icon name="close-circle-outline"></ion-icon>

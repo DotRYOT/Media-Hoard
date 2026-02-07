@@ -12,7 +12,7 @@ $color-accent-dark: lighten($color-accent, 5%); // Or darken if preferred
   --placeholder-color: #7a7a7a; // Placeholder text color
 
   --border-color: #3d4143; // Border color
-  --border-color-transparent: #3d414333;// Border color transparent
+  --border-color-transparent: #3d414333; // Border color transparent
   // --border-color: #ffffff; // Border color
   --hover-border-color: #505052; // Hover border color
 
@@ -178,19 +178,20 @@ input {
   -webkit-align-items: center;
   align-items: center;
 
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: fixed;
+  top: 3.5rem;
+  left: 1rem;
+  border-radius: .25rem;
 
   height: 3rem;
-  width: 100%;
 
   background-color: var(--success-color);
 
   z-index: 1000;
 
   h2 {
-    text-decoration: underline;
+    margin: 0rem 1rem;
+    font-size: 1rem;
   }
 
   a {
@@ -214,8 +215,8 @@ input {
     color: var(--text-color);
 
     ion-icon {
-      height: 2rem;
-      width: 2rem;
+      height: 1.5rem;
+      width: 1.5rem;
     }
   }
 }
