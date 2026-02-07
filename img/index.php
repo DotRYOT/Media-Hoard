@@ -77,6 +77,7 @@ $openMediaTab = $config['openMediaTab'];
       <button>Random</button>
       <button>Newest</button>
       <button>Oldest</button>
+      <button>Favorites</button>
     </div>
   </div>
   <div class="ImageGrid"></div>
@@ -167,6 +168,29 @@ $openMediaTab = $config['openMediaTab'];
 
       document.querySelector('.filterTab button:nth-child(3)').addEventListener('click', () => {
         renderPosts(sortByOldest(allPosts));
+      });
+
+      document.querySelector('.filterTab button:nth-child(4)').addEventListener('click', async () => {
+        const container = document.querySelector('.ImageGrid');
+        try {
+          const resp = await fetch('./favoriteImages.json');
+          if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+          const favs = await resp.json();
+          if (!Array.isArray(favs) || favs.length === 0) {
+            container.innerHTML = `<div class="noPosts">No favorite images yet.</div>`;
+            return;
+          }
+          const favSet = new Set(favs);
+          const filtered = allPosts.filter(p => favSet.has(p.PUID));
+          if (filtered.length === 0) {
+            container.innerHTML = `<div class="noPosts">No favorite images found.</div>`;
+            return;
+          }
+          renderPosts(sortByNewest(filtered));
+        } catch (error) {
+          console.error('Favorites fetch error:', error.message || error);
+          container.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
+        }
       });
     }
 
