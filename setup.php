@@ -29,6 +29,11 @@ if (!file_exists("./video/posts.json")) {
   file_put_contents("./video/posts.json", json_encode([]));
 }
 
+// Make sure the /video/favoriteVideos.json file exists
+if (!file_exists("./video/favoriteVideos.json")) {
+  file_put_contents("./video/favoriteVideos.json", json_encode([]));
+}
+
 // Make sure the /video/posts.json file exists
 if (!file_exists("./img/imageFiles/images.json")) {
   file_put_contents("./img/imageFiles/images.json", json_encode([]));
