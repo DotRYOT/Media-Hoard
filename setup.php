@@ -29,42 +29,41 @@ if (!file_exists("./video/posts.json")) {
   file_put_contents("./video/posts.json", json_encode([]));
 }
 
-// Make sure the /video/favoriteVideos.json file exists
-if (!file_exists("./video/favoriteVideos.json")) {
-  file_put_contents("./video/favoriteVideos.json", json_encode([]));
-}
-
-// Make sure the /img/favoriteImages.json file exists
-if (!file_exists("./img/favoriteImages.json")) {
-  file_put_contents("./img/favoriteImages.json", json_encode([]));
-}
-
 // Make sure the /video/posts.json file exists
 if (!file_exists("./img/imageFiles/images.json")) {
   file_put_contents("./img/imageFiles/images.json", json_encode([]));
 }
 
-// Copy the _videoPage.php to the video directory
+//
+//
+// Only copy scripts under this
+//
+//
+
+if (!file_exists("./video/favoriteVideos.json")) {
+  copy("./scripts/utility/favoriteVideos.json", "./video/favoriteVideos.json");
+}
+
+if (!file_exists("./img/favoriteImages.json")) {
+  copy("./scripts/utility/favoriteImages.json", "./img/favoriteImages.json");
+}
+
 if (!file_exists("./video/_video.php")) {
   copy("./scripts/_video.php", "./video/_video.php");
 }
 
-// Copy the _img.php to the img directory
 if (!file_exists("./img/imageFiles/_img.php")) {
   copy("./scripts/_img.php", "./img/imageFiles/_img.php");
 }
 
-// Copy the config.json to the root directory
 if (!file_exists("./config.json")) {
-  copy("./scripts/config.json", "./config.json");
+  copy("./scripts/utility/config.json", "./config.json");
 }
 
-// Copy the .htaccess file to the root directory
 if (!file_exists("./.htaccess")) {
   copy("./scripts/utility/.htaccess", "./.htaccess");
 }
 
-// Copy the favicon.png file to the root directory
 if (!file_exists("./favicon.png")) {
   copy("./scripts/utility/favicon.png", "./favicon.png");
 }

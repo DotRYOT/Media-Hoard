@@ -1,0 +1,60 @@
+# Enable Cross-Origin Resource Sharing (CORS) for fonts
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    <FilesMatch "\.(ttf|ttc|otf|eot|woff|woff2|svg)$">
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+</IfModule>
+
+# Add correct MIME types for fonts
+AddType font/otf .otf
+AddType font/ttf .ttf
+AddType font/woff .woff
+AddType font/woff2 .woff2
+
+# Disable directory browsing for security
+Options -Indexes
+
+# Protect .htaccess file
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Deny access to sensitive files
+<FilesMatch "\.(env|ini|log|sh|sql|bak)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Enable HTTPS redirection (optional if you want to force HTTPS)
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Protect against XSS and other attacks
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Set a long expiration date for font files for performance optimization
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+#
+# --- PHP Upload Limits ---
+# Only works on Apache with mod_php enabled and `AllowOverride Options` set.
+# For other environments (like FPM/FastCGI), these must be set in php.ini or pool config.
+
+php_value upload_max_filesize 1024M
+php_value post_max_size      1025M
+php_value max_execution_time 300
+php_value max_input_time     300
+php_value memory_limit       256M

@@ -139,11 +139,11 @@ video
 
 scripts/yt-dlp.exe
 
-config.json
+/config.json
 
-.htaccess
+/.htaccess
 
-favicon.png
+/favicon.png
 
 scripts/temp/
 
