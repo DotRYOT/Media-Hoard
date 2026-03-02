@@ -1,5 +1,8 @@
 <?php
 require_once '../version.php';
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+$basePath = preg_replace('#/(video|scripts)$#', '', $scriptDir);
+$basePath = ($basePath === '/' || $basePath === '.') ? '' : rtrim($basePath, '/');
 $videoUID = $_GET['id'];
 $videoTime = $_GET['time'];
 $videoTitle = $_GET['title'];
@@ -190,7 +193,8 @@ $videoPath = $_GET['video_path'];
 
       function favoriteVideo() {
         const puid = '<?= $videoUID; ?>';
-        fetch('../scripts/utility/_favoriteVideo.php', {
+        const favoriteEndpoint = <?= json_encode($basePath . '/scripts/utility/_favoriteVideo.php'); ?>;
+        fetch(favoriteEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -222,7 +226,8 @@ $videoPath = $_GET['video_path'];
       // Set initial favorite icon state on load
       function setInitialFavoriteState() {
         const puid = '<?= $videoUID; ?>';
-        fetch('../video/favoriteVideos.json')
+        const favoritesFile = <?= json_encode($basePath . '/video/favoriteVideos.json'); ?>;
+        fetch(favoritesFile)
           .then(resp => {
             if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
             return resp.json();
