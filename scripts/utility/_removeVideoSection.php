@@ -3,6 +3,11 @@ require __DIR__ . '/../_inc.php';
 
 header('Content-Type: application/json');
 
+ignore_user_abort(true);
+if (function_exists('set_time_limit')) {
+  @set_time_limit(0);
+}
+
 function parse_time_to_seconds($input)
 {
   if (!is_string($input)) {
@@ -94,10 +99,29 @@ function regenerate_thumbnail($videoPath, $thumbPath)
 
   $ffmpegBinary = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'ffmpeg.exe' : 'ffmpeg';
   $filterString = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
-  $thumbCmd = $ffmpegBinary . ' -y -ss ' . escapeshellarg((string) $frameTime) . ' -i ' . escapeshellarg($videoPath) . ' -vf ' . escapeshellarg($filterString) . ' -vframes 1 ' . escapeshellarg($thumbPath) . ' 2>&1';
+  $thumbCmd = $ffmpegBinary . ' -v error -nostats -y -ss ' . escapeshellarg((string) $frameTime) . ' -i ' . escapeshellarg($videoPath) . ' -vf ' . escapeshellarg($filterString) . ' -vframes 1 ' . escapeshellarg($thumbPath) . ' 2>&1';
   $thumbOutput = [];
   $thumbCode = 0;
   exec($thumbCmd, $thumbOutput, $thumbCode);
+}
+
+function run_ffmpeg_command($command, &$exitCode, &$details)
+{
+  $logFile = tempnam(sys_get_temp_dir(), 'mh_ffmpeg_');
+  $fullCommand = $command . ' -v error -nostats 2> ' . escapeshellarg($logFile);
+  $out = [];
+  $exitCode = 0;
+  exec($fullCommand, $out, $exitCode);
+
+  $details = '';
+  if ($logFile && file_exists($logFile)) {
+    $details = trim((string) file_get_contents($logFile));
+    @unlink($logFile);
+  }
+
+  if (strlen($details) > 4000) {
+    $details = substr($details, 0, 4000) . "\n...truncated";
+  }
 }
 
 $raw = file_get_contents('php://input');
@@ -200,6 +224,7 @@ $isOutroCut = ($duration !== false) ? ($end >= ($duration - 0.001)) : false;
 
 $output = [];
 $code = 0;
+$errorDetails = '';
 
 if ($hasAudio) {
   if ($isIntroCut) {
@@ -210,8 +235,8 @@ if ($hasAudio) {
     $filterWithAudio = "[0:v]trim=0:{$startArg},setpts=PTS-STARTPTS[v0];[0:v]trim=start={$endArg},setpts=PTS-STARTPTS[v1];[0:a]atrim=0:{$startArg},asetpts=PTS-STARTPTS[a0];[0:a]atrim=start={$endArg},asetpts=PTS-STARTPTS[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]";
   }
 
-  $commandWithAudio = $ffmpegBinary . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterWithAudio) . ' -map "[v]" -map "[a]" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath) . ' 2>&1';
-  exec($commandWithAudio, $output, $code);
+  $commandWithAudio = $ffmpegBinary . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterWithAudio) . ' -map "[v]" -map "[a]" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath);
+  run_ffmpeg_command($commandWithAudio, $code, $errorDetails);
 } else {
   if ($isIntroCut) {
     $filterVideoOnly = "[0:v]trim=start={$endArg},setpts=PTS-STARTPTS[v]";
@@ -221,15 +246,15 @@ if ($hasAudio) {
     $filterVideoOnly = "[0:v]trim=0:{$startArg},setpts=PTS-STARTPTS[v0];[0:v]trim=start={$endArg},setpts=PTS-STARTPTS[v1];[v0][v1]concat=n=2:v=1:a=0[v]";
   }
 
-  $commandVideoOnly = $ffmpegBinary . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterVideoOnly) . ' -map "[v]" -c:v libx264 -preset veryfast -crf 23 -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath) . ' 2>&1';
-  exec($commandVideoOnly, $output, $code);
+  $commandVideoOnly = $ffmpegBinary . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterVideoOnly) . ' -map "[v]" -c:v libx264 -preset veryfast -crf 23 -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath);
+  run_ffmpeg_command($commandVideoOnly, $code, $errorDetails);
 }
 
 if ($code !== 0 || !file_exists($tmpOutputPath)) {
   echo json_encode([
     'success' => false,
     'error' => 'Unable to process video section removal',
-    'details' => implode("\n", $output)
+    'details' => $errorDetails
   ]);
   exit;
 }
