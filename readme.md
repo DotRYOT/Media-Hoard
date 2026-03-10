@@ -1,70 +1,62 @@
 # Media Hoard
 
-A simple way to watch your favorite videos offline — no internet required!
+Media Hoard is a local-first PHP media library for downloading, uploading, organizing, and playing videos/images from your own server environment.
 
-Built with PHP. Designed for simplicity.
+## Features
 
-## Description
-
-Video Archiver lets you download and watch YouTube videos locally using yt-dlp and PHP.  
-Perfect for curating your own offline video library.
+- Download videos with `yt-dlp`
+- Upload local videos
+- Auto-generate thumbnails with `ffmpeg`
+- Favorite videos and images
+- Autoplay next video with 5-second "Up next" countdown UI
+- Tag-based playlists (create tags, browse playlists, play by tag)
+- Remove a section of a video by `start` and `end` time (intro/sponsor trimming)
+- Video player controls (play/pause, seek, volume, fullscreen, time display)
 
 ## Requirements
 
-- A server or local environment that can run PHP scripts (e.g., [XAMPP](https://www.apachefriends.org/), WAMP, LAMP)
-- FFmpeg in your system PATH
-- Git (optional, for updates)
+- PHP-capable server environment (e.g. [XAMPP](https://www.apachefriends.org/), WAMP, LAMP)
+- `ffmpeg` and `ffprobe` available in system PATH
+- `yt-dlp` (app can install/update it)
+- Git (optional)
 
-## 🚀 Installation via Git (Recommended)
+## Installation (Git)
 
-1. **Install Git**:  
-   [Download & Install Git](https://git-scm.com/downloads)
-
-2. **Open Terminal / Command Prompt / PowerShell** and run:
+1. Install Git: [Download Git](https://git-scm.com/downloads)
+2. Clone into your web root (`htdocs` for XAMPP):
 
    ```bash
-     cd path/to/htdocs
-     git clone https://github.com/DotRYOT/videoArchiver.git
+   cd path/to/htdocs
+   git clone https://github.com/DotRYOT/videoArchiver.git Media-Hoard
    ```
 
-3. Install FFmpeg (if not already installed):
+3. Install FFmpeg (Windows example):
 
    ```bash
    winget install "FFmpeg (Essentials Build)"
    ```
 
-4. Open your browser and go to:
+4. Open in browser:
 
-   [http://localhost/videoArchiver/index.php](http://localhost/videoArchiver/index.php)
+   - `http://localhost/Media-Hoard/`
 
-5. The app will automatically install yt-dlp on first launch.
+5. On first run, setup files are created automatically and you can install/update `yt-dlp` from the app.
 
-## Auto-Updater
+## Usage Notes
 
-The app includes a built-in updater so you won't need to manually re-download it every time. But you can always come back to look at the code or updates.
+- **Tag Playlists**: add tags in a video's settings popup, then use tag chips or the **Playlists** filter on Home.
+- **Remove Video Section**: open a video → settings → "Remove Video Section" → enter start/end (seconds or `HH:MM:SS`) → process.
+- **Autoplay Next**: when a video ends, an "Up next" card appears with countdown, thumbnail, cancel, and play-now options.
 
-## Roadmap
+## Stack
 
-- Setup and basic functionality (complete)
-- Fix filters (complete)
-- Finish settings page (complete)
-- Add ability to add your own videos (complete)
-- Add images tab and functionality (waiting)
-
-## Authors
-
-- [@DotRYOT](https://github.com/DotRYOT)
-
-## Tech Stack
-
-- Frontend: HTML, CSS, JavaScript
+- Frontend: HTML, SCSS/CSS, JavaScript
 - Backend: PHP
-- Server: Apache (or compatible environment)
-- Dependencies: [yt-dlp](https://github.com/yt-dlp/yt-dlp), FFmpeg
+- Tools: [yt-dlp](https://github.com/yt-dlp/yt-dlp), FFmpeg/FFprobe
 
 ## License
 
-This project is licensed under the [MIT License](https://github.com/DotRYOT/videoArchiver/blob/main/LICENSE).
+Licensed under the [MIT License](LICENSE).
 
 ```
 
