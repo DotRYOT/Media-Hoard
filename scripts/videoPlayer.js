@@ -4,12 +4,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const progressBar = document.querySelector(".progress-bar");
   const volumeButton = document.getElementById("volume");
   const fullscreenButton = document.getElementById("fullscreen");
+  const timeDisplay = document.getElementById("time-display");
   const volumeControl = document.querySelector(".volume-control");
   const volumeSlider = document.querySelector(".volume-slider input");
   const volumeControlContainer = document.querySelector(".volume-control");
   let previousVolume = parseFloat(localStorage.getItem("previousVolume")) || 1;
   let hideCursorTimeout;
   let hideControlsTimeout;
+  let autoplayCountdownTimeout;
+  let autoplayCountdownInterval;
+  let autoplayOverlayEl;
 
   // Load saved volume
   const savedVolume = parseFloat(localStorage.getItem("volume")) || 1;
@@ -45,12 +49,41 @@ document.addEventListener("DOMContentLoaded", () => {
   video.addEventListener("timeupdate", () => {
     const progress = (video.currentTime / video.duration) * 100;
     progressBar.style.setProperty("--progress", `${progress}%`);
+    updateTimeDisplay();
   });
+
+  function formatTime(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 0) {
+      return "0:00";
+    }
+
+    const totalSeconds = Math.floor(seconds);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    return `${minutes}:${String(secs).padStart(2, "0")}`;
+  }
+
+  function updateTimeDisplay() {
+    if (!timeDisplay) return;
+    const current = formatTime(video.currentTime || 0);
+    const total = formatTime(video.duration || 0);
+    timeDisplay.textContent = `${current} / ${total}`;
+  }
+
+  video.addEventListener("loadedmetadata", updateTimeDisplay);
+  video.addEventListener("durationchange", updateTimeDisplay);
 
   progressBar.addEventListener("click", (e) => {
     const rect = progressBar.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     video.currentTime = pos * video.duration;
+    updateTimeDisplay();
   });
 
   // Volume controls
@@ -254,5 +287,173 @@ document.addEventListener("DOMContentLoaded", () => {
   // Optional: Unmute after play starts
   video.addEventListener("play", () => {
     video.muted = false;
+    clearAutoplayCountdown();
   });
+
+  function clearAutoplayCountdown(removeOverlay = true) {
+    clearTimeout(autoplayCountdownTimeout);
+    clearInterval(autoplayCountdownInterval);
+    autoplayCountdownTimeout = null;
+    autoplayCountdownInterval = null;
+
+    if (removeOverlay && autoplayOverlayEl) {
+      autoplayOverlayEl.remove();
+      autoplayOverlayEl = null;
+    }
+  }
+
+  function ensureAutoplayStyles() {
+    if (document.getElementById("up-next-style")) return;
+    const style = document.createElement("style");
+    style.id = "up-next-style";
+    style.textContent = `
+      .up-next-overlay {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        z-index: 50;
+        width: min(320px, calc(100% - 32px));
+        background: rgba(0, 0, 0, 0.82);
+        color: #fff;
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        backdrop-filter: blur(4px);
+      }
+
+      .up-next-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+      }
+
+      .up-next-thumb {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+
+      .up-next-count {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .up-next-progress {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .up-next-progress > div {
+        height: 100%;
+        width: 0%;
+        background: #fff;
+        transition: width 1s linear;
+      }
+
+      .up-next-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .up-next-actions button {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .up-next-cancel {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+      }
+
+      .up-next-play {
+        background: #fff;
+        color: #000;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function showAutoplayOverlay(nextVideoUrl, nextVideoThumbnail) {
+    const wrapper = document.querySelector(".video-wrapper");
+    if (!wrapper) return;
+
+    clearAutoplayCountdown();
+    ensureAutoplayStyles();
+
+    const overlay = document.createElement("div");
+    overlay.className = "up-next-overlay";
+    const thumbnailMarkup = nextVideoThumbnail
+      ? `<img class="up-next-thumb" src="${nextVideoThumbnail}" alt="Next video thumbnail">`
+      : "";
+
+    overlay.innerHTML = `
+      <div class="up-next-top">
+        <span>Up next</span>
+        <span class="up-next-count">5</span>
+      </div>
+      ${thumbnailMarkup}
+      <div class="up-next-progress"><div></div></div>
+      <div class="up-next-actions">
+        <button type="button" class="up-next-cancel">Cancel</button>
+        <button type="button" class="up-next-play">Play now</button>
+      </div>
+    `;
+
+    const countdownEl = overlay.querySelector(".up-next-count");
+    const progressEl = overlay.querySelector(".up-next-progress > div");
+    const cancelBtn = overlay.querySelector(".up-next-cancel");
+    const playNowBtn = overlay.querySelector(".up-next-play");
+
+    let remainingSeconds = 5;
+    progressEl.style.width = "0%";
+
+    autoplayCountdownInterval = setInterval(() => {
+      remainingSeconds -= 1;
+      if (remainingSeconds > 0) {
+        countdownEl.textContent = String(remainingSeconds);
+      }
+
+      const elapsed = Math.min(5, 5 - Math.max(remainingSeconds, 0));
+      progressEl.style.width = `${(elapsed / 5) * 100}%`;
+    }, 1000);
+
+    autoplayCountdownTimeout = setTimeout(() => {
+      window.location.href = nextVideoUrl;
+    }, 5000);
+
+    cancelBtn.addEventListener("click", () => {
+      clearAutoplayCountdown(false);
+      countdownEl.textContent = "Canceled";
+      progressEl.style.width = "0%";
+      cancelBtn.disabled = true;
+      playNowBtn.disabled = false;
+    });
+
+    playNowBtn.addEventListener("click", () => {
+      clearAutoplayCountdown();
+      window.location.href = nextVideoUrl;
+    });
+
+    wrapper.appendChild(overlay);
+    autoplayOverlayEl = overlay;
+  }
+
+  video.addEventListener("ended", () => {
+    const nextVideoUrl = document.body?.dataset?.nextVideoUrl;
+    const nextVideoThumbnail = document.body?.dataset?.nextVideoThumbnail || "";
+    if (!nextVideoUrl) return;
+    showAutoplayOverlay(nextVideoUrl, nextVideoThumbnail);
+  });
+
+  updateTimeDisplay();
 });

@@ -47,6 +47,16 @@ if (file_put_contents($jsonFilePath, json_encode($data, JSON_PRETTY_PRINT)) === 
   die(json_encode(["success" => false, "message" => "Failed to update JSON file."]));
 }
 
+$tagsFilePath = "../../video/tags.json";
+if (file_exists($tagsFilePath)) {
+  $tagsRaw = file_get_contents($tagsFilePath);
+  $tagsMap = json_decode($tagsRaw, true);
+  if (is_array($tagsMap) && isset($tagsMap[$puid])) {
+    unset($tagsMap[$puid]);
+    file_put_contents($tagsFilePath, json_encode($tagsMap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+  }
+}
+
 // Define paths - YOU CAN CUSTOMIZE THESE AS NEEDED
 $videoDir = '../../video/' . $puid . '/';
 $videoFile = $videoDir . 'file_' . $puid . '.mp4';

@@ -7,6 +7,11 @@ $videoUID = $_GET['id'];
 $videoTime = $_GET['time'];
 $videoTitle = $_GET['title'];
 $videoPath = $_GET['video_path'];
+$activeTag = isset($_GET['tag']) ? $_GET['tag'] : '';
+
+$videoFileSystemPath = dirname(__DIR__) . str_replace('/', DIRECTORY_SEPARATOR, $videoPath);
+$videoCacheVersion = file_exists($videoFileSystemPath) ? filemtime($videoFileSystemPath) : time();
+$videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,7 +45,7 @@ $videoPath = $_GET['video_path'];
   <div class="leftVideoSection">
     <div class="video-wrapper">
       <video preload="auto">
-        <source src="..<?= $videoPath; ?>" type="video/mp4">
+        <source src="<?= htmlspecialchars($videoSrc, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" type="video/mp4">
         Your browser does not support the video tag.
       </video>
       <div class="controls">
@@ -57,6 +62,7 @@ $videoPath = $_GET['video_path'];
         <div class="progress-bar">
           <div class="buffer-bar"></div>
         </div>
+        <div id="time-display">0:00 / 0:00</div>
         <button id="fullscreen">
           <ion-icon name="expand"></ion-icon>
         </button>
@@ -70,6 +76,8 @@ $videoPath = $_GET['video_path'];
         <div class="timeStamp">
           <?= date('Y-m-d H:i:s', $videoTime); ?>
         </div>
+        <div class="timeStamp" id="activePlaylistLabel"></div>
+        <div class="currentVideoTags" id="currentVideoTags"></div>
       </div>
       <div class="videoSettings">
         <button type="button" id="favoriteBtn" name="favorite" onclick="favoriteVideo()" aria-pressed="false">
@@ -110,6 +118,30 @@ $videoPath = $_GET['video_path'];
           <p>Delete Video!</p>
         </button>
       </div>
+      <div class="deleteVideoContainer">
+        <p>
+          <strong>Tags (Playlist)</strong>
+        </p>
+        <input type="text" id="videoTagsInput" placeholder="chill, music, tutorial"
+          style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #fff; margin-bottom: 8px;">
+        <button type="button" id="saveTagsBtn" onclick="saveCurrentVideoTags()" style="display: flex;">
+          <ion-icon name="pricetags-outline"></ion-icon>
+          <p>Save Tags</p>
+        </button>
+      </div>
+      <div class="deleteVideoContainer">
+        <p>
+          <strong>Remove Video Section</strong>
+        </p>
+        <input type="text" id="removeSectionStart" placeholder="Start (e.g. 00:00:00 or 0)"
+          style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #fff; margin-bottom: 8px;">
+        <input type="text" id="removeSectionEnd" placeholder="End (e.g. 00:00:30 or 30)"
+          style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #fff; margin-bottom: 8px;">
+        <button type="button" id="removeSectionBtn" onclick="removeVideoSection()" style="display: flex;">
+          <ion-icon name="cut-outline"></ion-icon>
+          <p>Remove Section</p>
+        </button>
+      </div>
     </div>
   </div>
   <div class="rightVideoSection">
@@ -121,19 +153,127 @@ $videoPath = $_GET['video_path'];
       }
 
       let allPosts = [];
+      let tagsMap = {};
+      let nextVideoUrl = '';
+      let nextVideoThumbnail = '';
+      let currentTag = String(<?= json_encode($activeTag); ?> || '').trim().toLowerCase();
+      const currentVideoPuid = <?= json_encode($videoUID); ?>;
+      const tagsEndpoint = <?= json_encode($basePath . '/scripts/utility/_videoTags.php'); ?>;
+
+      function normalizeTag(tag) {
+        return String(tag || '').trim().toLowerCase();
+      }
+
+      function ensureTagStyles() {
+        if (document.getElementById('video-tag-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'video-tag-styles';
+        style.textContent = `
+          .post-tags, .currentVideoTags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+          }
+
+          .tag-chip {
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: inherit;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      function setTagInUrl(tag) {
+        const url = new URL(window.location.href);
+        if (tag) {
+          url.searchParams.set('tag', tag);
+        } else {
+          url.searchParams.delete('tag');
+        }
+        window.history.replaceState({}, '', url.toString());
+      }
+
+      function getPostTags(post) {
+        if (!post || !post.PUID) return [];
+        const tags = tagsMap[post.PUID];
+        return Array.isArray(tags) ? tags : [];
+      }
+
+      function renderActivePlaylistLabel() {
+        const label = document.getElementById('activePlaylistLabel');
+        if (!label) return;
+
+        if (currentTag) {
+          label.textContent = `Playlist: #${currentTag}`;
+        } else {
+          label.textContent = '';
+        }
+      }
+
+      function buildVideoUrl(post) {
+        const tagParam = currentTag ? `&tag=${encodeURIComponent(currentTag)}` : '';
+        return `../video/_video.php?id=${post.PUID}&time=${post.Time}&title=${encodeURIComponent(post.title)}&video_path=${encodeURIComponent(post.video_path)}&thumbnail_path=${encodeURIComponent(post.thumbnail_path)}${tagParam}`;
+      }
+
+      function setNextVideoUrl(posts) {
+        if (!Array.isArray(posts) || posts.length < 2) {
+          nextVideoUrl = '';
+          nextVideoThumbnail = '';
+          document.body.dataset.nextVideoUrl = '';
+          document.body.dataset.nextVideoThumbnail = '';
+          return;
+        }
+
+        let candidatePosts = [...posts];
+        if (currentTag) {
+          const tagged = candidatePosts.filter(post => getPostTags(post).map(normalizeTag).includes(currentTag));
+          if (tagged.length > 0) {
+            candidatePosts = tagged;
+          }
+        }
+
+        const sortedPosts = [...candidatePosts].sort((a, b) => b.Time - a.Time);
+        const currentIndex = sortedPosts.findIndex(post => String(post.PUID) === String(currentVideoPuid));
+
+        if (currentIndex === -1) {
+          const fallback = sortedPosts.find(post => String(post.PUID) !== String(currentVideoPuid));
+          nextVideoUrl = fallback ? buildVideoUrl(fallback) : '';
+          nextVideoThumbnail = fallback && fallback.thumbnail_path ? `../${fallback.thumbnail_path}` : '';
+        } else {
+          const nextIndex = (currentIndex + 1) % sortedPosts.length;
+          nextVideoUrl = buildVideoUrl(sortedPosts[nextIndex]);
+          nextVideoThumbnail = sortedPosts[nextIndex] && sortedPosts[nextIndex].thumbnail_path
+            ? `../${sortedPosts[nextIndex].thumbnail_path}`
+            : '';
+        }
+
+        document.body.dataset.nextVideoUrl = nextVideoUrl;
+        document.body.dataset.nextVideoThumbnail = nextVideoThumbnail;
+      }
       function createPostCard(post) {
         if (!post || !post.video_path || !post.title) return '';
         const decodedTitle = decodeHTMLEntities(post.title);
         const thumbnailPath = post.thumbnail_path;
         const videoUID = post.PUID;
         const date = new Date(post.Time * 1000).toLocaleDateString();
+        const tags = getPostTags(post);
+        const tagsHtml = tags.length
+          ? `<div class="post-tags">${tags.map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`).join('')}</div>`
+          : '';
         return `
       <div class="post-card">
-        <a href="../video/_video.php?id=${videoUID}&time=${post.Time}&title=${encodeURIComponent(post.title)}&video_path=${encodeURIComponent(post.video_path)}&thumbnail_path=${encodeURIComponent(post.thumbnail_path)}" class="post-link">
+        <a href="${buildVideoUrl(post)}" class="post-link">
           <img src="../${thumbnailPath}" alt="${decodedTitle} thumbnail" loading="lazy" class="post-thumbnail">
           <h3 class="post-title">${decodedTitle}</h3>
         </a>
         <p class="post-date">Posted: ${date}</p>
+        ${tagsHtml}
       </div>
     `;
       }
@@ -155,7 +295,63 @@ $videoPath = $_GET['video_path'];
           return;
         }
         allPosts = data;
-        renderPosts(sortByRandom(data));
+        setNextVideoUrl(data);
+        if (currentTag) {
+          applyTagFilter(currentTag);
+        } else {
+          renderPosts(sortByRandom(data));
+        }
+      }
+
+      function renderCurrentVideoTags(tags) {
+        const container = document.getElementById('currentVideoTags');
+        if (!container) return;
+
+        if (!Array.isArray(tags) || tags.length === 0) {
+          container.innerHTML = '';
+          return;
+        }
+
+        container.innerHTML = tags
+          .map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`)
+          .join('');
+
+        const input = document.getElementById('videoTagsInput');
+        if (input) {
+          input.value = tags.join(', ');
+        }
+      }
+
+      function applyTagFilter(tag) {
+        const normalized = normalizeTag(tag);
+        const container = document.querySelector('.PostLoadedAreaVideoPage');
+
+        if (!normalized) {
+          currentTag = '';
+          setTagInUrl('');
+          renderActivePlaylistLabel();
+          setNextVideoUrl(allPosts);
+          renderPosts(sortByRandom(allPosts));
+          return;
+        }
+
+        currentTag = normalized;
+        setTagInUrl(normalized);
+        renderActivePlaylistLabel();
+
+        const filtered = allPosts.filter(post => {
+          const tags = getPostTags(post).map(normalizeTag);
+          return tags.includes(normalized);
+        });
+
+        setNextVideoUrl(allPosts);
+
+        if (filtered.length === 0) {
+          container.innerHTML = `<div class="noPosts">No related videos for #${normalized}.</div>`;
+          return;
+        }
+
+        renderPosts(sortByRandom(filtered));
       }
 
       function sortByRandom(posts) {
@@ -174,13 +370,27 @@ $videoPath = $_GET['video_path'];
       }
 
       function fetchAndLoadPosts() {
-        fetch('../video/posts.json')
-          .then(response => {
+        Promise.all([
+          fetch('../video/posts.json').then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return response.json();
-          })
-          .then(data => {
+          }),
+          fetch(tagsEndpoint)
+            .then(response => response.ok ? response.json() : { success: true, tagsMap: {} })
+            .catch(() => ({ success: true, tagsMap: {} }))
+        ])
+          .then(([data, tagData]) => {
+            tagsMap = tagData && tagData.success && tagData.tagsMap ? tagData.tagsMap : {};
+
+            const currentVideoTags = getPostTags({ PUID: currentVideoPuid });
+            if (!currentTag && currentVideoTags.length > 0) {
+              currentTag = normalizeTag(currentVideoTags[0]);
+              setTagInUrl(currentTag);
+            }
+
+            renderActivePlaylistLabel();
             loadPosts(data);
+            renderCurrentVideoTags(getPostTags({ PUID: currentVideoPuid }));
           })
           .catch(error => {
             console.error("Fetch error:", error.message);
@@ -188,6 +398,100 @@ $videoPath = $_GET['video_path'];
             if (container) {
               container.innerHTML = `<div class="noPosts">Error loading posts. Please try again later.</div>`;
             }
+          });
+      }
+
+      function saveCurrentVideoTags() {
+        const input = document.getElementById('videoTagsInput');
+        if (!input) return;
+
+        const tags = input.value
+          .split(',')
+          .map(tag => normalizeTag(tag))
+          .filter(Boolean);
+
+        fetch(tagsEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ puid: currentVideoPuid, tags })
+        })
+          .then(response => response.json())
+          .then(result => {
+            if (!result || !result.success) {
+              console.error('Unable to save tags', result);
+              return;
+            }
+
+            tagsMap[currentVideoPuid] = Array.isArray(result.tags) ? result.tags : [];
+            renderCurrentVideoTags(tagsMap[currentVideoPuid]);
+
+            if (!currentTag && tagsMap[currentVideoPuid].length > 0) {
+              currentTag = normalizeTag(tagsMap[currentVideoPuid][0]);
+              setTagInUrl(currentTag);
+              renderActivePlaylistLabel();
+            }
+
+            if (currentTag) {
+              applyTagFilter(currentTag);
+            } else {
+              setNextVideoUrl(allPosts);
+            }
+          })
+          .catch(error => {
+            console.error('Tag save error:', error);
+          });
+      }
+
+      function removeVideoSection() {
+        const startInput = document.getElementById('removeSectionStart');
+        const endInput = document.getElementById('removeSectionEnd');
+        const button = document.getElementById('removeSectionBtn');
+
+        if (!startInput || !endInput || !button) return;
+
+        const startTime = startInput.value.trim();
+        const endTime = endInput.value.trim();
+
+        if (!startTime || !endTime) {
+          alert('Please provide both start and end time.');
+          return;
+        }
+
+        const originalButtonHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<ion-icon name="hourglass-outline"></ion-icon><p>Processing...</p>';
+
+        const endpoint = <?= json_encode($basePath . '/scripts/utility/_removeVideoSection.php'); ?>;
+        fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            puid: currentVideoPuid,
+            startTime,
+            endTime
+          })
+        })
+          .then(response => response.json())
+          .then(result => {
+            if (!result || !result.success) {
+              const details = result && result.details ? `\n\n${result.details}` : '';
+              alert(`${(result && result.error) ? result.error : 'Unable to remove section.'}${details}`);
+              return;
+            }
+
+            window.location.reload();
+          })
+          .catch(error => {
+            console.error('Remove section error:', error);
+            alert('Failed to process video section removal.');
+          })
+          .finally(() => {
+            button.disabled = false;
+            button.innerHTML = originalButtonHtml;
           });
       }
 
@@ -251,7 +555,33 @@ $videoPath = $_GET['video_path'];
           });
       }
 
-      document.addEventListener('DOMContentLoaded', () => { fetchAndLoadPosts(); setInitialFavoriteState(); });
+      document.addEventListener('DOMContentLoaded', () => {
+        ensureTagStyles();
+        fetchAndLoadPosts();
+        setInitialFavoriteState();
+
+        const relatedContainer = document.querySelector('.PostLoadedAreaVideoPage');
+        if (relatedContainer) {
+          relatedContainer.addEventListener('click', (event) => {
+            const target = event.target.closest('.tag-chip');
+            if (!target) return;
+            event.preventDefault();
+            const rawTag = decodeURIComponent(target.dataset.tag || '');
+            applyTagFilter(rawTag);
+          });
+        }
+
+        const currentTagContainer = document.getElementById('currentVideoTags');
+        if (currentTagContainer) {
+          currentTagContainer.addEventListener('click', (event) => {
+            const target = event.target.closest('.tag-chip');
+            if (!target) return;
+            event.preventDefault();
+            const rawTag = decodeURIComponent(target.dataset.tag || '');
+            applyTagFilter(rawTag);
+          });
+        }
+      });
     </script>
   </div>
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>

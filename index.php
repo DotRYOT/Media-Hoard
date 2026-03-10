@@ -100,6 +100,7 @@ require_once './scripts/_inc.php';
       <button>Newest</button>
       <button>Oldest</button>
       <button>Favorites</button>
+      <button>Playlists</button>
     </div>
   </div>
   <div class="PostLoadedArea"></div>
@@ -116,19 +117,187 @@ require_once './scripts/_inc.php';
     });
 
     let allPosts = [];
+    let tagsMap = {};
+    let activeTag = '';
+    const tagsEndpoint = './scripts/utility/_videoTags.php';
+
+    function normalizeTag(tag) {
+      return String(tag || '').trim().toLowerCase();
+    }
+
+    function setTagInUrl(tag) {
+      const url = new URL(window.location.href);
+      if (tag) {
+        url.searchParams.set('tag', tag);
+      } else {
+        url.searchParams.delete('tag');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    function ensureTagStyles() {
+      if (document.getElementById('video-tag-styles')) return;
+      const style = document.createElement('style');
+      style.id = 'video-tag-styles';
+      style.textContent = `
+        .post-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag-chip {
+          border: 1px solid rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.08);
+          color: inherit;
+          border-radius: 999px;
+          padding: 4px 10px;
+          font-size: 12px;
+          cursor: pointer;
+        }
+
+        .playlist-hub {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .playlist-card {
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 12px;
+          padding: 12px;
+          background: rgba(255,255,255,0.03);
+        }
+
+        .playlist-title {
+          font-size: 16px;
+          margin-bottom: 8px;
+          font-weight: 700;
+        }
+
+        .playlist-meta {
+          font-size: 12px;
+          opacity: 0.8;
+          margin-bottom: 10px;
+        }
+
+        .playlist-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .playlist-actions button {
+          border: none;
+          border-radius: 999px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .playlist-play {
+          background: #fff;
+          color: #000;
+        }
+
+        .playlist-view {
+          background: rgba(255,255,255,0.2);
+          color: #fff;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    function buildVideoUrl(post, tag = activeTag) {
+      const tagQuery = tag ? `&tag=${encodeURIComponent(tag)}` : '';
+      return `./video/_video.php?id=${post.PUID}&time=${post.Time}&title=${encodeURIComponent(post.title)}&video_path=${encodeURIComponent(post.video_path)}&thumbnail_path=${encodeURIComponent(post.thumbnail_path)}${tagQuery}`;
+    }
+
+    function buildPlaylists() {
+      const playlistMap = new Map();
+
+      allPosts.forEach(post => {
+        const tags = getPostTags(post);
+        tags.forEach(tag => {
+          const normalized = normalizeTag(tag);
+          if (!normalized) return;
+          if (!playlistMap.has(normalized)) {
+            playlistMap.set(normalized, []);
+          }
+          playlistMap.get(normalized).push(post);
+        });
+      });
+
+      const playlists = Array.from(playlistMap.entries()).map(([tag, posts]) => ({
+        tag,
+        posts: sortByNewest(posts),
+        count: posts.length
+      }));
+
+      playlists.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+      return playlists;
+    }
+
+    function renderPlaylistsHub() {
+      const container = document.querySelector('.PostLoadedArea');
+      const playlists = buildPlaylists();
+
+      if (playlists.length === 0) {
+        container.innerHTML = `<div class="noPosts">No playlists yet. Add tags to videos first.</div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="playlist-hub">
+          ${playlists.map(playlist => `
+            <div class="playlist-card">
+              <div class="playlist-title">#${playlist.tag}</div>
+              <div class="playlist-meta">${playlist.count} video${playlist.count === 1 ? '' : 's'}</div>
+              <div class="playlist-actions">
+                <button type="button" class="playlist-play" data-tag="${encodeURIComponent(playlist.tag)}">Play</button>
+                <button type="button" class="playlist-view" data-tag="${encodeURIComponent(playlist.tag)}">View</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function playPlaylist(tag) {
+      const normalized = normalizeTag(tag);
+      const container = document.querySelector('.PostLoadedArea');
+      if (!normalized) return;
+
+      const filtered = sortByNewest(allPosts.filter(post => {
+        const tags = getPostTags(post).map(normalizeTag);
+        return tags.includes(normalized);
+      }));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="noPosts">No videos found for #${normalized}.</div>`;
+        return;
+      }
+
+      window.location.href = buildVideoUrl(filtered[0], normalized);
+    }
+
+    function getPostTags(post) {
+      if (!post || !post.PUID) return [];
+      const tags = tagsMap[post.PUID];
+      return Array.isArray(tags) ? tags : [];
+    }
     function createPostCard(post) {
       if (!post || !post.video_path || !post.title) return '';
       const decodedTitle = decodeHTMLEntities(post.title);
       const thumbnailPath = post.thumbnail_path;
       const videoUID = post.PUID;
       const date = new Date(post.Time * 1000).toLocaleDateString();
+      const tags = getPostTags(post);
+      const tagsHtml = tags.length
+        ? `<div class="post-tags">${tags.map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`).join('')}</div>`
+        : '';
       return `
       <div class="post-card">
-        <a href="./video/_video.php?id=${videoUID}&time=${post.Time}&title=${encodeURIComponent(post.title)}&video_path=${encodeURIComponent(post.video_path)}&thumbnail_path=${encodeURIComponent(post.thumbnail_path)}" class="post-link">
+        <a href="${buildVideoUrl(post)}" class="post-link">
           <img src=".${thumbnailPath}" alt="${decodedTitle} thumbnail" loading="lazy" class="post-thumbnail">
           <h3 class="post-title">${decodedTitle}</h3>
         </a>
         <p class="post-date">Posted: ${date}</p>
+        ${tagsHtml}
       </div>
     `;
     }
@@ -145,7 +314,11 @@ require_once './scripts/_inc.php';
         return;
       }
       allPosts = data;
-      renderPosts(sortByNewest(data));
+      if (activeTag) {
+        applyTagFilter(activeTag);
+      } else {
+        renderPosts(sortByNewest(data));
+      }
     }
 
     function renderPosts(posts) {
@@ -172,18 +345,26 @@ require_once './scripts/_inc.php';
 
     function setupFilterButtons() {
       document.querySelector('.filterTab button:nth-child(1)').addEventListener('click', () => {
+        activeTag = '';
+        setTagInUrl('');
         renderPosts(sortByRandom(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(2)').addEventListener('click', () => {
+        activeTag = '';
+        setTagInUrl('');
         renderPosts(sortByNewest(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(3)').addEventListener('click', () => {
+        activeTag = '';
+        setTagInUrl('');
         renderPosts(sortByOldest(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(4)').addEventListener('click', async () => {
+        activeTag = '';
+        setTagInUrl('');
         const container = document.querySelector('.PostLoadedArea');
         try {
           const resp = await fetch('./video/favoriteVideos.json');
@@ -205,6 +386,63 @@ require_once './scripts/_inc.php';
           container.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
         }
       });
+
+      document.querySelector('.filterTab button:nth-child(5)').addEventListener('click', () => {
+        activeTag = '';
+        setTagInUrl('');
+        renderPlaylistsHub();
+      });
+
+      document.querySelector('.PostLoadedArea').addEventListener('click', (event) => {
+        const playlistPlay = event.target.closest('.playlist-play');
+        if (playlistPlay) {
+          event.preventDefault();
+          const rawTag = decodeURIComponent(playlistPlay.dataset.tag || '');
+          playPlaylist(rawTag);
+          return;
+        }
+
+        const playlistView = event.target.closest('.playlist-view');
+        if (playlistView) {
+          event.preventDefault();
+          const rawTag = decodeURIComponent(playlistView.dataset.tag || '');
+          applyTagFilter(rawTag);
+          return;
+        }
+
+        const target = event.target.closest('.tag-chip');
+        if (!target) return;
+        event.preventDefault();
+        const rawTag = decodeURIComponent(target.dataset.tag || '');
+        applyTagFilter(rawTag);
+      });
+    }
+
+    function applyTagFilter(tag) {
+      const normalized = normalizeTag(tag);
+      const container = document.querySelector('.PostLoadedArea');
+
+      if (!normalized) {
+        activeTag = '';
+        setTagInUrl('');
+        renderPosts(sortByNewest(allPosts));
+        return;
+      }
+
+      activeTag = normalized;
+      setTagInUrl(normalized);
+
+      const filtered = allPosts.filter(post => {
+        const tags = getPostTags(post).map(normalizeTag);
+        return tags.includes(normalized);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="noPosts">No videos found for #${normalized}.</div>`;
+        return;
+      }
+
+      renderPosts(sortByNewest(filtered));
     }
 
     function decodeHTMLEntities(text) {
@@ -233,13 +471,18 @@ require_once './scripts/_inc.php';
     }
 
     function fetchAndLoadPosts() {
-      fetch('./video/posts.json')
-        .then(response => {
+      Promise.all([
+        fetch('./video/posts.json').then(response => {
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           return response.json();
-        })
-        .then(data => {
-          loadPosts(data);
+        }),
+        fetch(tagsEndpoint)
+          .then(response => response.ok ? response.json() : { success: true, tagsMap: {} })
+          .catch(() => ({ success: true, tagsMap: {} }))
+      ])
+        .then(([postData, tagsData]) => {
+          tagsMap = tagsData && tagsData.success && tagsData.tagsMap ? tagsData.tagsMap : {};
+          loadPosts(postData);
           setupFilterButtons();
         })
         .catch(error => {
@@ -251,7 +494,11 @@ require_once './scripts/_inc.php';
         });
     }
 
-    document.addEventListener('DOMContentLoaded', fetchAndLoadPosts);
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureTagStyles();
+      activeTag = normalizeTag(new URLSearchParams(window.location.search).get('tag') || '');
+      fetchAndLoadPosts();
+    });
   </script>
 
   <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>

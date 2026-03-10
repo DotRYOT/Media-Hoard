@@ -44,6 +44,10 @@ if (!file_exists("./video/favoriteVideos.json")) {
   copy("./scripts/utility/favoriteVideos.json", "./video/favoriteVideos.json");
 }
 
+if (!file_exists("./video/tags.json")) {
+  copy("./scripts/utility/videoTags.json", "./video/tags.json");
+}
+
 if (!file_exists("./img/favoriteImages.json")) {
   copy("./scripts/utility/favoriteImages.json", "./img/favoriteImages.json");
 }
@@ -58,10 +62,6 @@ if (!file_exists("./img/imageFiles/_img.php")) {
 
 if (!file_exists("./config.json")) {
   copy("./scripts/utility/config.json", "./config.json");
-}
-
-if (!file_exists("./.htaccess")) {
-  copy("./scripts/utility/.htaccess", "./.htaccess");
 }
 
 if (!file_exists("./favicon.png")) {

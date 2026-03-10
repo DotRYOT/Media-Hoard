@@ -141,8 +141,6 @@ scripts/yt-dlp.exe
 
 /config.json
 
-/.htaccess
-
 /favicon.png
 
 scripts/temp/
