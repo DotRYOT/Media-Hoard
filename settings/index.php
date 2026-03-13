@@ -5,8 +5,7 @@ require_once '../scripts/_inc.php';
 $configFile = __DIR__ . '/../config.json';
 $config = json_decode(file_get_contents($configFile), true);
 
-// $ytdlpVersion = getYtDlpVersion();
-$ytdlpVersion['version'] = "2024.05.18";
+$ytdlpVersion = getYtDlpVersion();
 
 $videojsonFilePath = __DIR__ . "/../video/posts.json";
 $cacheFilePath = __DIR__ . "/../cache/video_count.cache";
