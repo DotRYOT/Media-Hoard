@@ -5,6 +5,8 @@ $thumbWidth = $_POST['thumbWidth'];
 $thumbHeight = $_POST['thumbHeight'];
 $videoExtension = $_POST['videoExtension'];
 $openMediaTab = isset($_POST['openMediaTab']) ? 'true' : 'false';
+$maxFilesInput = isset($_POST['maxFiles']) ? (int) $_POST['maxFiles'] : 20;
+$maxFiles = max(1, $maxFilesInput);
 
 $configFile = __DIR__ . '/../../config.json';
 if (!file_exists($configFile)) {
@@ -21,9 +23,9 @@ $config['thumbWidth'] = $thumbWidth;
 $config['thumbHeight'] = $thumbHeight;
 $config['videoExtension'] = $videoExtension;
 $config['openMediaTab'] = $openMediaTab;
+$config['maxFiles'] = (string) $maxFiles;
 
 file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT));
 
 header('Location: ../../settings/');
 exit();
-

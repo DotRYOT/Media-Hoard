@@ -14,6 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let autoplayCountdownTimeout;
   let autoplayCountdownInterval;
   let autoplayOverlayEl;
+  let fullscreenResumeOverlayEl;
+  let fullscreenRetryBound = false;
+  const fullscreenIntentKey = "mh_keep_fullscreen";
 
   // Load saved volume
   const savedVolume = parseFloat(localStorage.getItem("volume")) || 1;
@@ -190,6 +193,117 @@ document.addEventListener("DOMContentLoaded", () => {
   // Fullscreen handling
   fullscreenButton.addEventListener("click", toggleFullscreen);
 
+  function navigateToVideo(url) {
+    if (!url) return;
+    if (document.fullscreenElement || document.body.classList.contains("fullscreen")) {
+      sessionStorage.setItem(fullscreenIntentKey, "1");
+    } else {
+      sessionStorage.removeItem(fullscreenIntentKey);
+    }
+    window.location.href = url;
+  }
+
+  function showFullscreenResumePrompt() {
+    if (fullscreenResumeOverlayEl || document.fullscreenElement) return;
+    ensureAutoplayStyles();
+    const targetWrapper = wrapper || document.body;
+
+    const overlay = document.createElement("div");
+    overlay.className = "up-next-overlay";
+    overlay.innerHTML = `
+      <div class="up-next-top">
+        <span>Fullscreen paused by browser</span>
+      </div>
+      <div class="up-next-actions">
+        <button type="button" class="up-next-play">Resume Fullscreen</button>
+        <button type="button" class="up-next-cancel">Dismiss</button>
+      </div>
+    `;
+
+    const resumeBtn = overlay.querySelector(".up-next-play");
+    const dismissBtn = overlay.querySelector(".up-next-cancel");
+
+    resumeBtn.addEventListener("click", () => {
+      const target = wrapper || document.documentElement;
+      const request = target.requestFullscreen || document.documentElement.requestFullscreen;
+      if (typeof request !== "function") return;
+
+      request
+        .call(target)
+        .then(() => {
+          document.body.classList.add("fullscreen");
+          fullscreenButton.innerHTML = '<ion-icon name="contract"></ion-icon>';
+          sessionStorage.removeItem(fullscreenIntentKey);
+          overlay.remove();
+          fullscreenResumeOverlayEl = null;
+        })
+        .catch(() => {
+          document.body.classList.remove("fullscreen");
+          fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>';
+        });
+    });
+
+    dismissBtn.addEventListener("click", () => {
+      sessionStorage.removeItem(fullscreenIntentKey);
+      overlay.remove();
+      fullscreenResumeOverlayEl = null;
+    });
+
+    targetWrapper.appendChild(overlay);
+    fullscreenResumeOverlayEl = overlay;
+  }
+
+  function restoreFullscreenIfNeeded() {
+    const shouldRestore = sessionStorage.getItem(fullscreenIntentKey) === "1";
+    if (!shouldRestore) return;
+
+    const tryRestore = () => {
+      if (document.fullscreenElement) {
+        sessionStorage.removeItem(fullscreenIntentKey);
+        return;
+      }
+
+      const target = wrapper || document.documentElement;
+      const request = target.requestFullscreen || document.documentElement.requestFullscreen;
+      if (typeof request === "function") {
+        request
+          .call(target)
+          .then(() => {
+            document.body.classList.add("fullscreen");
+            fullscreenButton.innerHTML = '<ion-icon name="contract"></ion-icon>';
+            sessionStorage.removeItem(fullscreenIntentKey);
+          })
+          .catch(() => {
+            document.body.classList.remove("fullscreen");
+            fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>';
+            showFullscreenResumePrompt();
+          });
+      } else {
+        showFullscreenResumePrompt();
+      }
+    };
+
+    tryRestore();
+    setTimeout(tryRestore, 300);
+    setTimeout(tryRestore, 1200);
+
+    if (!fullscreenRetryBound) {
+      const retryOnUserGesture = () => {
+        const stillNeeded = sessionStorage.getItem(fullscreenIntentKey) === "1";
+        if (stillNeeded && !document.fullscreenElement) {
+          tryRestore();
+        }
+        document.removeEventListener("click", retryOnUserGesture, true);
+        document.removeEventListener("keydown", retryOnUserGesture, true);
+        fullscreenRetryBound = false;
+      };
+
+      document.addEventListener("click", retryOnUserGesture, true);
+      document.addEventListener("keydown", retryOnUserGesture, true);
+      fullscreenRetryBound = true;
+    }
+  }
+
   function toggleFullscreen() {
     const elem = document.documentElement;
     if (!document.fullscreenElement) {
@@ -205,6 +319,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Exit fullscreen with ESC key
   document.addEventListener("keydown", (e) => {
+    const isTyping =
+      e.target &&
+      (e.target.tagName === "INPUT" ||
+        e.target.tagName === "TEXTAREA" ||
+        e.target.isContentEditable);
+
+    if (!isTyping && e.key.toLowerCase() === "f") {
+      e.preventDefault();
+      toggleFullscreen();
+      return;
+    }
+
     if (e.key === "Escape" && document.fullscreenElement) {
       document.exitFullscreen();
       document.body.classList.remove("fullscreen");
@@ -428,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
 
     autoplayCountdownTimeout = setTimeout(() => {
-      window.location.href = nextVideoUrl;
+      navigateToVideo(nextVideoUrl);
     }, 5000);
 
     cancelBtn.addEventListener("click", () => {
@@ -441,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     playNowBtn.addEventListener("click", () => {
       clearAutoplayCountdown();
-      window.location.href = nextVideoUrl;
+      navigateToVideo(nextVideoUrl);
     });
 
     wrapper.appendChild(overlay);
@@ -456,4 +582,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   updateTimeDisplay();
+  restoreFullscreenIfNeeded();
+  window.addEventListener("load", restoreFullscreenIfNeeded);
 });

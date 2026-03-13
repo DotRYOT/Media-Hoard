@@ -138,7 +138,7 @@ try {
 
   <div class="VideoSettingsSection">
     <h3>Video Settings</h3>
-    <form action="../scripts/utility/_videoSettings.php" method="post" class="settingsForm">
+    <form action="../scripts/utility/_settings.php" method="post" class="settingsForm">
       <div class="settingsRow">
         <p>Frame Time (in frames) <span>Default: 5</span></p>
         <input type="number" id="frameTime" name="frameTime" value="<?= $config['frameTime'] ?>">
@@ -158,6 +158,10 @@ try {
       <div class="settingsRowCheckBox">
         <p>Open Media Tab <span>Default: false</span></p>
         <input type="checkbox" id="openMediaTab" name="openMediaTab" value="true" <?= $config['openMediaTab'] === 'true' ? 'checked' : '' ?>>
+      </div>
+      <div class="settingsRow">
+        <p>Max Image Uploads Per Request <span>Default: 20</span></p>
+        <input type="number" id="maxFiles" name="maxFiles" min="1" value="<?= isset($config['maxFiles']) ? $config['maxFiles'] : '20' ?>">
       </div>
       <button type="submit">Save</button>
     </form>

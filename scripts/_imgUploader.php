@@ -6,7 +6,6 @@ require "./_inc.php";
 $configFile = '../config.json';
 $uploadDir = '../img/imageFiles/';
 $imageJsonFile = '../img/imageFiles/images.json';
-$maxFiles = 20;
 $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 // === Load Config === //
@@ -17,6 +16,11 @@ if (!file_exists($configFile)) {
 $config = json_decode(file_get_contents($configFile), true);
 if (json_last_error() !== JSON_ERROR_NONE) {
   die("Invalid JSON in config file.");
+}
+
+$maxFiles = isset($config['maxFiles']) ? (int) $config['maxFiles'] : 20;
+if ($maxFiles < 1) {
+  $maxFiles = 20;
 }
 
 // Make sure upload directory exists
