@@ -4,6 +4,12 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
 ## Features
 
+# Media Hoard
+
+Media Hoard is a local-first PHP media library for downloading, uploading, organizing, and playing videos/images from your own server environment.
+
+## Features
+
 - Download videos with `yt-dlp`
 - Upload local videos
 - Upload local images
@@ -17,6 +23,7 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 ## Requirements
 
 - PHP-capable server environment (e.g. [XAMPP](https://www.apachefriends.org/), WAMP, LAMP)
+- PHP `zip` extension enabled (required for in-app ZIP updater)
 - `ffmpeg` and `ffprobe` available in system PATH
 - `yt-dlp` (app can install/update it)
 - Git (optional)
@@ -42,6 +49,17 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    - `http://localhost/Media-Hoard/`
 
 5. On first run, setup files are created automatically and you can install/update `yt-dlp` from the app.
+
+## Enable PHP Zip (XAMPP on Windows)
+
+If you see `PHP Zip extension is required for non-git updates`, enable it in XAMPP:
+
+1. Open `XAMPP Control Panel`.
+2. Click `Config` next to Apache → open `php.ini`.
+3. Find `;extension=zip` and remove the leading `;` so it becomes `extension=zip`.
+4. Save `php.ini`.
+5. Restart Apache from XAMPP Control Panel.
+6. Verify by creating a file with `<?php phpinfo(); ?>` and checking that **zip** appears, or run `php -m` and confirm `zip` is listed.
 
 ## Usage Notes
 

@@ -6,6 +6,7 @@ $configFile = __DIR__ . '/../config.json';
 $config = json_decode(file_get_contents($configFile), true);
 
 $ytdlpVersion = getYtDlpVersion();
+$isZipAvailable = class_exists('ZipArchive');
 
 $videojsonFilePath = __DIR__ . "/../video/posts.json";
 $cacheFilePath = __DIR__ . "/../cache/video_count.cache";
@@ -50,6 +51,19 @@ try {
       </div>
     </div>
   </nav>
+
+  <?php if (!$isZipAvailable): ?>
+    <div class="topSettingsSection">
+      <div class="settingsUpdateSection">
+        <h3>ZIP Extension Required</h3>
+        <p class="version">System updater needs PHP <strong>zip</strong> enabled in php.ini.</p>
+        <button type="button" onclick="window.location.href='../readme.md'">
+          <ion-icon name="help-circle-outline"></ion-icon>
+          <p>How to Enable ZIP</p>
+        </button>
+      </div>
+    </div>
+  <?php endif; ?>
 
   <div class="topSettingsSection">
     <div class="settingsUpdateSection">

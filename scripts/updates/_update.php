@@ -1,10 +1,8 @@
 <?php
 
-$repoUrl = 'https://github.com/DotRYOT/Media-Hoard.git';
-$branch = 'main';
 $projectDir = realpath(__DIR__ . '/../..');
 $localVersionFile = $projectDir . '/version.php';
-$remoteVersionUrl = 'https://raw.githubusercontent.com/DotRYOT/Media-Hoard/refs/heads/main/version.php';
+$remoteVersionUrl = 'https://raw.githubusercontent.com/DotRYOT/Media-Hoard/main/version.php';
 
 function esc($value)
 {
@@ -48,6 +46,7 @@ function info($message, $class = '')
 {
   $className = $class ? ' class="' . esc($class) . '"' : '';
   echo '<p' . $className . '>' . esc($message) . '</p>';
+  @flush();
 }
 
 function fetchRemoteFile($url)
@@ -80,24 +79,196 @@ function fetchRemoteFile($url)
   return $response;
 }
 
-function runGit($projectDir, $args)
+function downloadBinaryFile($url, $destinationPath)
 {
-  $gitDirArg = escapeshellarg($projectDir);
-  $safeDirArg = escapeshellarg($projectDir);
-  $command = 'git -c safe.directory=' . $safeDirArg . ' -C ' . $gitDirArg . ' ' . $args . ' 2>&1';
-  exec($command, $output, $code);
-  $text = implode("\n", $output);
+  if (function_exists('curl_init')) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'MediaHoard-Updater/1.0');
+    $data = curl_exec($ch);
+    $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-  echo '<pre>' . esc('$ ' . $command . "\n" . $text) . '</pre>';
-
-  if ($code !== 0) {
-    throw new RuntimeException('Git command failed: ' . $args);
+    if ($data === false || $statusCode >= 400) {
+      return false;
+    }
+  } else {
+    $context = stream_context_create([
+      'http' => [
+        'timeout' => 60,
+        'header' => "User-Agent: MediaHoard-Updater/1.0\r\n"
+      ]
+    ]);
+    $data = @file_get_contents($url, false, $context);
+    if ($data === false) {
+      return false;
+    }
   }
 
-  return $text;
+  return file_put_contents($destinationPath, $data) !== false;
+}
+
+function removeDirectory($dir)
+{
+  if (!is_dir($dir)) {
+    return;
+  }
+
+  $items = scandir($dir);
+  if ($items === false) {
+    return;
+  }
+
+  foreach ($items as $item) {
+    if ($item === '.' || $item === '..') {
+      continue;
+    }
+
+    $path = $dir . DIRECTORY_SEPARATOR . $item;
+    if (is_dir($path)) {
+      removeDirectory($path);
+    } else {
+      @unlink($path);
+    }
+  }
+
+  @rmdir($dir);
+}
+
+function shouldSkipPath($relativePath)
+{
+  $normalized = str_replace('\\', '/', ltrim($relativePath, '/'));
+  $protectedPrefixes = [
+    '.git/',
+    'video/',
+    'img/imageFiles/',
+    'scripts/temp/',
+    'cache/'
+  ];
+
+  $protectedFiles = [
+    'config.json',
+    'scripts/yt-dlp.exe',
+    'video/posts.json',
+    'video/favoriteVideos.json',
+    'video/tags.json',
+    'img/favoriteImages.json'
+  ];
+
+  foreach ($protectedPrefixes as $prefix) {
+    if (strpos($normalized, $prefix) === 0) {
+      return true;
+    }
+  }
+
+  return in_array($normalized, $protectedFiles, true);
+}
+
+function copyDirectoryWithProtection($sourceDir, $targetDir)
+{
+  $iterator = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($sourceDir, FilesystemIterator::SKIP_DOTS),
+    RecursiveIteratorIterator::SELF_FIRST
+  );
+
+  foreach ($iterator as $item) {
+    $sourcePath = $item->getPathname();
+    $relativePath = substr($sourcePath, strlen($sourceDir) + 1);
+    $relativePath = str_replace('\\', '/', $relativePath);
+
+    if (shouldSkipPath($relativePath)) {
+      continue;
+    }
+
+    $destinationPath = $targetDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+
+    if ($item->isDir()) {
+      if (!is_dir($destinationPath)) {
+        mkdir($destinationPath, 0777, true);
+      }
+      continue;
+    }
+
+    $destinationDir = dirname($destinationPath);
+    if (!is_dir($destinationDir)) {
+      mkdir($destinationDir, 0777, true);
+    }
+
+    if (!copy($sourcePath, $destinationPath)) {
+      throw new RuntimeException('Failed to copy file: ' . $relativePath);
+    }
+  }
+}
+
+function runZipUpdate($projectDir)
+{
+  if (!class_exists('ZipArchive')) {
+    throw new RuntimeException('PHP Zip extension is required for non-git updates.');
+  }
+
+  $archiveUrl = 'https://codeload.github.com/DotRYOT/Media-Hoard/zip/refs/heads/main';
+  $tempBase = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'mediahoard_update_' . uniqid();
+  $zipFile = $tempBase . '.zip';
+
+  if (!downloadBinaryFile($archiveUrl, $zipFile)) {
+    throw new RuntimeException('Failed to download update archive from GitHub.');
+  }
+
+  if (!mkdir($tempBase, 0777, true) && !is_dir($tempBase)) {
+    @unlink($zipFile);
+    throw new RuntimeException('Failed to create temporary directory for update.');
+  }
+
+  $zip = new ZipArchive();
+  if ($zip->open($zipFile) !== true) {
+    @unlink($zipFile);
+    removeDirectory($tempBase);
+    throw new RuntimeException('Failed to open downloaded update archive.');
+  }
+
+  if (!$zip->extractTo($tempBase)) {
+    $zip->close();
+    @unlink($zipFile);
+    removeDirectory($tempBase);
+    throw new RuntimeException('Failed to extract update archive.');
+  }
+  $zip->close();
+
+  $entries = scandir($tempBase);
+  $rootFolder = null;
+  if ($entries !== false) {
+    foreach ($entries as $entry) {
+      if ($entry === '.' || $entry === '..') {
+        continue;
+      }
+
+      $fullPath = $tempBase . DIRECTORY_SEPARATOR . $entry;
+      if (is_dir($fullPath)) {
+        $rootFolder = $fullPath;
+        break;
+      }
+    }
+  }
+
+  if ($rootFolder === null) {
+    @unlink($zipFile);
+    removeDirectory($tempBase);
+    throw new RuntimeException('Extracted archive is missing root folder.');
+  }
+
+  copyDirectoryWithProtection($rootFolder, $projectDir);
+
+  @unlink($zipFile);
+  removeDirectory($tempBase);
 }
 
 renderPageStart();
+@set_time_limit(120);
+@ignore_user_abort(true);
+@ob_implicit_flush(true);
 
 if ($projectDir === false || !is_dir($projectDir)) {
   failAndExit('Project directory could not be resolved.');
@@ -136,22 +307,9 @@ if (version_compare($localVersion, $remoteVersion, '>=')) {
 
 info('New version detected. Starting update...', 'warn');
 
-if (!is_dir($projectDir . '/.git')) {
-  failAndExit('This installation is not a Git checkout (.git missing).');
-}
-
 try {
-  runGit($projectDir, '--version');
-
-  $remotes = runGit($projectDir, 'remote');
-  if (strpos($remotes, 'origin') === false) {
-    info('Origin remote not found. Adding origin...', 'warn');
-    runGit($projectDir, 'remote add origin ' . escapeshellarg($repoUrl));
-  }
-
-  runGit($projectDir, 'fetch origin --prune');
-  runGit($projectDir, 'checkout ' . escapeshellarg($branch));
-  runGit($projectDir, 'reset --hard ' . escapeshellarg('origin/' . $branch));
+  info('Using ZIP update mode...', 'warn');
+  runZipUpdate($projectDir);
 
   include $localVersionFile;
   $updatedVersion = isset($version) ? trim($version) : 'unknown';
