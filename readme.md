@@ -6,6 +6,7 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
 - Download videos with `yt-dlp`
 - Upload local videos
+- Upload local images
 - Auto-generate thumbnails with `ffmpeg`
 - Favorite videos and images
 - Autoplay next video with 5-second "Up next" countdown UI
@@ -48,6 +49,23 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 - **Remove Video Section**: open a video → settings → "Remove Video Section" → enter start/end (seconds or `HH:MM:SS`) → process.
 - **Autoplay Next**: when a video ends, an "Up next" card appears with countdown, thumbnail, cancel, and play-now options.
 
+## Settings
+
+- Open **Settings** in the app to change runtime options saved in `config.json`.
+- **Max Image Uploads Per Request** controls how many images can be uploaded in one request.
+- The image uploader uses the `maxFiles` value from `config.json`.
+
+### Configuration Keys
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `frameTime` | `5` | Frame offset (in frames) used for thumbnail extraction. |
+| `thumbWidth` | `640` | Generated thumbnail width in pixels. |
+| `thumbHeight` | `360` | Generated thumbnail height in pixels. |
+| `videoExtension` | `mp4` | File extension used for downloaded/processed videos. |
+| `openMediaTab` | `false` | Whether media opens in a new tab by default. |
+| `maxFiles` | `20` | Maximum number of images allowed per upload request. |
+
 ## Stack
 
 - Frontend: HTML, SCSS/CSS, JavaScript
@@ -57,7 +75,3 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 ## License
 
 Licensed under the [MIT License](LICENSE).
-
-```
-
-```
