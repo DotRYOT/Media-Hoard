@@ -58,3 +58,4 @@ php_value post_max_size      1025M
 php_value max_execution_time 300
 php_value max_input_time     300
 php_value memory_limit       256M
+php_value max_file_uploads 100

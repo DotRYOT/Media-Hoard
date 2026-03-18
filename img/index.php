@@ -94,11 +94,14 @@ $openMediaTab = $config['openMediaTab'];
         .then(response => response.json())
         .then(data => {
           document.getElementById("status").innerText = data.message;
-          fetchAndLoadPosts();
-          document.getElementById("fileUpload").value = "";
-          document.getElementById("fileNameDisplay").textContent = "No file selected";
-
-          console.log("Uploaded files:", data.files);
+          if (data.success) {
+            fetchAndLoadPosts();
+            document.getElementById("fileUpload").value = "";
+            document.getElementById("fileNameDisplay").textContent = "No file selected";
+            console.log("Uploaded files:", data.files);
+          } else {
+            console.error("Upload error:", data.message);
+          }
         })
         .catch(err => {
           document.getElementById("status").innerText = "Upload failed.";

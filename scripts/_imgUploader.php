@@ -1,6 +1,16 @@
 <?php
 
+ob_start(); // Buffer all output so PHP warnings don't corrupt the JSON response
+
 require "./_inc.php";
+
+// Return a JSON error response and exit (safe for AJAX endpoints)
+function jsonError($message) {
+  ob_clean();
+  header('Content-Type: application/json');
+  echo json_encode(['success' => false, 'message' => $message]);
+  exit();
+}
 
 // === Configuration === //
 $configFile = '../config.json';
@@ -31,18 +41,14 @@ if (!is_dir($uploadDir)) {
 // === Handle Upload === //
 
 if (!isset($_FILES['images']) || !is_array($_FILES['images']['name'])) {
-  $error = "No files uploaded or invalid request.";
-  handleError($error);
-  exit($error);
+  jsonError("No files uploaded or invalid request.");
 }
 
 $uploadedFiles = $_FILES['images'];
 $fileCount = count($uploadedFiles['name']);
 
 if ($fileCount > $maxFiles) {
-  $error = "You cannot upload more than $maxFiles images at once.";
-  handleError($error);
-  exit($error);
+  jsonError("You cannot upload more than $maxFiles images at once.");
 }
 
 $savedFilenames = [];
@@ -55,9 +61,8 @@ for ($i = 0; $i < $fileCount; $i++) {
 
   // Log file upload error code
   if ($error !== UPLOAD_ERR_OK) {
-    $error = "Error uploading file: $name (Error Code: $error)";
-    handleError($error);
-    continue;
+    error_log("Upload error for file $name: code $error");
+    continue; // skip this file, keep processing others
   }
 
   // Validate MIME type
@@ -66,9 +71,8 @@ for ($i = 0; $i < $fileCount; $i++) {
   finfo_close($finfo);
 
   if (!in_array($mimeType, $allowedMimeTypes)) {
-    $error = "File '$name' is not a valid image (MIME Type: $mimeType).";
-    handleError($error);
-    continue;
+    error_log("Invalid MIME type for $name: $mimeType");
+    continue; // skip this file, keep processing others
   }
 
   // Generate unique PUID
@@ -77,8 +81,7 @@ for ($i = 0; $i < $fileCount; $i++) {
   // Create folder for this image
   $folderPath = $uploadDir . $PUID;
   if (!mkdir($folderPath, 0777, true)) {
-    $error = "Failed to create folder for PUID: $PUID";
-    handleError($error);
+    error_log("Failed to create folder for PUID: $PUID");
     continue;
   }
 
@@ -89,8 +92,7 @@ for ($i = 0; $i < $fileCount; $i++) {
 
   // Log move attempt
   if (!move_uploaded_file($tmpName, $destination)) {
-    $error = "Failed to move uploaded file: $name to $destination";
-    handleError($error);
+    error_log("Failed to move uploaded file: $name to $destination");
     continue;
   }
 
@@ -105,9 +107,7 @@ for ($i = 0; $i < $fileCount; $i++) {
 }
 
 if (empty($savedFilenames)) {
-  $error = "No images were successfully uploaded.";
-  handleError($error);
-  exit($error);
+  jsonError("No images were successfully uploaded.");
 }
 
 // === Update images.json === //
@@ -122,15 +122,11 @@ if (!file_exists($imageJsonFile)) {
 try {
   $existingImages = json_decode(file_get_contents($imageJsonFile), true);
 } catch (\Exception $e) {
-  $error = "Failed to load images.json: " . $e->getMessage();
-  handleError($error);
-  exit($error);
+  jsonError("Failed to load images.json: " . $e->getMessage());
 }
 
 if (json_last_error() !== JSON_ERROR_NONE) {
-  $error = "Failed to parse images.json: " . json_last_error_msg();
-  handleError($error);
-  exit($error);
+  jsonError("Failed to parse images.json: " . json_last_error_msg());
 }
 
 // Merge new images with existing ones
@@ -140,20 +136,19 @@ $updatedImages = array_merge($existingImages, $newImagesData);
 try {
   $jsonContent = json_encode($updatedImages, JSON_PRETTY_PRINT);
   if (file_put_contents($imageJsonFile, $jsonContent) === false) {
-    $error = "Failed to write to images.json";
-    handleError($error);
-    exit($error);
+    jsonError("Failed to write to images.json");
   }
 } catch (\Exception $e) {
-  $error = "Failed to write to images.json: " . $e->getMessage();
-  handleError($error);
-  exit($error);
+  jsonError("Failed to write to images.json: " . $e->getMessage());
 }
 
 // === Success response === //
+$savedCount = count($savedFilenames);
+ob_clean();
+header('Content-Type: application/json');
 echo json_encode([
   "success" => true,
-  "message" => "$fileCount image(s) uploaded successfully.",
+  "message" => "$savedCount image(s) uploaded successfully.",
   "files" => $savedFilenames
 ]);
 
