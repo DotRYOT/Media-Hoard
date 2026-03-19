@@ -17,6 +17,7 @@ require_once './scripts/_inc.php';
   <link rel="shortcut icon" href="./favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="./css/index.min.css">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 
 <body id="videosPage">
@@ -90,7 +91,12 @@ require_once './scripts/_inc.php';
           <span id="fileNameDisplay" style="font-size: 14px; color: #888;"></span>
         </div>
         <input type="file" name="videos" id="fileUpload" accept="video/*" style="display: none;" required>
-        <button type="submit" name="upload" style="display: flex;" onclick="toggleSpinner()">Upload</button>
+        <button type="submit" name="upload" style="display: flex;">Upload</button>
+        <div id="videoUploadProgressWrap">
+          <progress id="videoUploadProgress" value="0" max="100"></progress>
+          <span id="videoUploadProgressText">0%</span>
+        </div>
+        <div id="videoUploadStatus"></div>
       </form>
     </div>
   </div>
@@ -105,6 +111,17 @@ require_once './scripts/_inc.php';
   </div>
   <div class="PostLoadedArea"></div>
   <script>
+    function setVideoUploadProgress(percent) {
+      const normalized = Math.max(0, Math.min(100, percent || 0));
+      $('#videoUploadProgress').val(normalized);
+      $('#videoUploadProgressText').text(`${normalized}%`);
+    }
+
+    function resetVideoUploadProgress() {
+      $('#videoUploadProgressWrap').hide();
+      setVideoUploadProgress(0);
+    }
+
     document.getElementById("fileUpload").addEventListener("change", function () {
       const fileInput = this;
       const fileNameDisplay = document.getElementById("fileNameDisplay");
@@ -114,6 +131,58 @@ require_once './scripts/_inc.php';
       } else {
         fileNameDisplay.textContent = "";
       }
+    });
+
+    $(function () {
+      $('#localVideoUpload').on('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        $.ajax({
+          url: './scripts/_uploader.php',
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          dataType: 'json',
+          xhr: function () {
+            const xhr = $.ajaxSettings.xhr();
+            if (xhr.upload) {
+              xhr.upload.addEventListener('progress', function (event) {
+                if (!event.lengthComputable) return;
+                const percent = Math.round((event.loaded / event.total) * 100);
+                setVideoUploadProgress(percent);
+              });
+            }
+            return xhr;
+          },
+          beforeSend: function () {
+            $('#videoUploadStatus').text('Uploading...');
+            $('#videoUploadProgressWrap').show();
+            setVideoUploadProgress(0);
+            $('#localVideoUpload button[type="submit"]').prop('disabled', true);
+          },
+          success: function (data) {
+            setVideoUploadProgress(100);
+            if (data && data.success && data.redirect) {
+              window.location.href = data.redirect;
+              return;
+            }
+
+            $('#videoUploadStatus').text((data && data.message) ? data.message : 'Upload complete.');
+            fetchAndLoadPosts();
+          },
+          error: function (jqXHR) {
+            const response = jqXHR.responseJSON;
+            const message = response && response.message ? response.message : 'Upload failed.';
+            $('#videoUploadStatus').text(message);
+          },
+          complete: function () {
+            $('#localVideoUpload button[type="submit"]').prop('disabled', false);
+            setTimeout(resetVideoUploadProgress, 700);
+          }
+        });
+      });
     });
 
     let allPosts = [];

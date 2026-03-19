@@ -398,6 +398,69 @@
         gap: 10px;
       }
     }
+
+    #localImageUpload {
+      flex-wrap: wrap;
+      align-items: center;
+      row-gap: .75rem;
+
+      >div:first-of-type {
+        flex: 1 1 100%;
+        min-width: 0;
+      }
+
+      #status {
+        color: var(--placeholder-color);
+        font-size: .9rem;
+        min-height: 1.2rem;
+      }
+
+      #imageUploadProgressWrap {
+        flex: 1 1 100%;
+        display: none;
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: .5rem;
+        padding: .5rem .625rem;
+        box-sizing: border-box;
+        margin-top: 0;
+      }
+
+      #imageUploadProgress {
+        width: 100%;
+        height: .6rem;
+        border: 0;
+        border-radius: 999px;
+        overflow: hidden;
+
+        &::-webkit-progress-bar {
+          background-color: var(--button-bg);
+          border-radius: 999px;
+        }
+
+        &::-webkit-progress-value {
+          background-color: var(--accent-color);
+          border-radius: 999px;
+        }
+
+        &::-moz-progress-bar {
+          background-color: var(--accent-color);
+          border-radius: 999px;
+        }
+      }
+
+      #imageUploadProgressText {
+        display: inline-flex;
+        margin-top: .4rem;
+        padding: .125rem .5rem;
+        border-radius: 999px;
+        background: var(--button-bg);
+        border: 1px solid var(--border-color);
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+    }
   }
 }
 

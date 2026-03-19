@@ -18,6 +18,7 @@ $openMediaTab = $config['openMediaTab'];
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="../css/imagePage.min.css">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 
 <body id="imagesPage">
@@ -69,6 +70,10 @@ $openMediaTab = $config['openMediaTab'];
         </div>
         <input type="file" name="images[]" id="fileUpload" accept="image/*" multiple required style="display: none;">
         <button type="submit" name="upload">Upload</button>
+        <div id="imageUploadProgressWrap">
+          <progress id="imageUploadProgress" value="0" max="100"></progress>
+          <span id="imageUploadProgressText">0%</span>
+        </div>
       </form>
     </div>
   </div>
@@ -82,31 +87,79 @@ $openMediaTab = $config['openMediaTab'];
   </div>
   <div class="ImageGrid"></div>
   <script>
-    document.getElementById("localImageUpload").addEventListener("submit", function (e) {
-      e.preventDefault();
+    function setImageUploadProgress(percent) {
+      const normalized = Math.max(0, Math.min(100, percent || 0));
+      $('#imageUploadProgress').val(normalized);
+      $('#imageUploadProgressText').text(`${normalized}%`);
+    }
 
-      const formData = new FormData(this);
+    function resetImageUploadProgress() {
+      $('#imageUploadProgressWrap').hide();
+      setImageUploadProgress(0);
+    }
 
-      fetch('../scripts/_imgUploader.php', {
-        method: 'POST',
-        body: formData
-      })
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById("status").innerText = data.message;
-          if (data.success) {
-            fetchAndLoadPosts();
-            document.getElementById("fileUpload").value = "";
-            document.getElementById("fileNameDisplay").textContent = "No file selected";
-            console.log("Uploaded files:", data.files);
-          } else {
-            console.error("Upload error:", data.message);
+    $(function () {
+      $('#fileUpload').on('change', function () {
+        if (!this.files || this.files.length === 0) {
+          $('#fileNameDisplay').text('No file selected');
+          return;
+        }
+
+        if (this.files.length === 1) {
+          $('#fileNameDisplay').text(this.files[0].name);
+          return;
+        }
+
+        $('#fileNameDisplay').text(`${this.files.length} files selected`);
+      });
+
+      $('#localImageUpload').on('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        $.ajax({
+          url: '../scripts/_imgUploader.php',
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          dataType: 'json',
+          xhr: function () {
+            const xhr = $.ajaxSettings.xhr();
+            if (xhr.upload) {
+              xhr.upload.addEventListener('progress', function (event) {
+                if (!event.lengthComputable) return;
+                const percent = Math.round((event.loaded / event.total) * 100);
+                setImageUploadProgress(percent);
+              });
+            }
+            return xhr;
+          },
+          beforeSend: function () {
+            $('#status').text('Uploading...');
+            $('#imageUploadProgressWrap').show();
+            setImageUploadProgress(0);
+          },
+          success: function (data) {
+            $('#status').text(data.message || 'Upload complete.');
+            setImageUploadProgress(100);
+
+            if (data.success) {
+              fetchAndLoadPosts();
+              $('#fileUpload').val('');
+              $('#fileNameDisplay').text('No file selected');
+            }
+          },
+          error: function (jqXHR) {
+            const response = jqXHR.responseJSON;
+            const message = response && response.message ? response.message : 'Upload failed.';
+            $('#status').text(message);
+          },
+          complete: function () {
+            setTimeout(resetImageUploadProgress, 700);
           }
-        })
-        .catch(err => {
-          document.getElementById("status").innerText = "Upload failed.";
-          console.error(err);
         });
+      });
     });
 
     let allPosts = [];
