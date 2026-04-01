@@ -37,14 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
       video
         .play()
         .then(() => {
-          playButton.innerHTML = '<ion-icon name="pause"></ion-icon>';
+          playButton.innerHTML = '<span class="gicon">pause</span>';
         })
         .catch((e) => {
           console.warn("Playback failed:", e);
         });
     } else {
       video.pause();
-      playButton.innerHTML = '<ion-icon name="play"></ion-icon>';
+      playButton.innerHTML = '<span class="gicon">play_arrow</span>';
     }
   }
 
@@ -109,11 +109,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateVolumeIcon(volume) {
     if (volume === 0) {
-      volumeButton.innerHTML = '<ion-icon name="volume-mute"></ion-icon>';
+      volumeButton.innerHTML = '<span class="gicon">volume_off</span>';
     } else if (volume < 0.5) {
-      volumeButton.innerHTML = '<ion-icon name="volume-low"></ion-icon>';
+      volumeButton.innerHTML = '<span class="gicon">volume_down</span>';
     } else {
-      volumeButton.innerHTML = '<ion-icon name="volume-high"></ion-icon>';
+      volumeButton.innerHTML = '<span class="gicon">volume_up</span>';
     }
   }
 
@@ -232,14 +232,14 @@ document.addEventListener("DOMContentLoaded", () => {
         .call(target)
         .then(() => {
           document.body.classList.add("fullscreen");
-          fullscreenButton.innerHTML = '<ion-icon name="contract"></ion-icon>';
+          fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>';
           sessionStorage.removeItem(fullscreenIntentKey);
           overlay.remove();
           fullscreenResumeOverlayEl = null;
         })
         .catch(() => {
           document.body.classList.remove("fullscreen");
-          fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>';
+          fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>';
         });
     });
 
@@ -270,12 +270,12 @@ document.addEventListener("DOMContentLoaded", () => {
           .call(target)
           .then(() => {
             document.body.classList.add("fullscreen");
-            fullscreenButton.innerHTML = '<ion-icon name="contract"></ion-icon>';
+            fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>';
             sessionStorage.removeItem(fullscreenIntentKey);
           })
           .catch(() => {
             document.body.classList.remove("fullscreen");
-            fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>';
+            fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>';
             showFullscreenResumePrompt();
           });
       } else {
@@ -309,11 +309,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.fullscreenElement) {
       elem.requestFullscreen().catch(console.error);
       document.body.classList.add("fullscreen");
-      fullscreenButton.innerHTML = '<ion-icon name="contract"></ion-icon>'; // Exit icon
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>'; // Exit icon
     } else {
       document.exitFullscreen().catch(console.error);
       document.body.classList.remove("fullscreen");
-      fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>'; // Enter icon
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>'; // Enter icon
     }
   }
 
@@ -341,7 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("fullscreenchange", () => {
     if (!document.fullscreenElement) {
       document.body.classList.remove("fullscreen");
-      fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>';
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>';
     }
   });
 
@@ -350,11 +350,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.fullscreenElement) {
       wrapper.requestFullscreen().catch(console.error);
       document.body.classList.add("fullscreen");
-      fullscreenButton.innerHTML = '<ion-icon name="contract"></ion-icon>';
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>';
     } else {
       document.exitFullscreen().catch(console.error);
       document.body.classList.remove("fullscreen");
-      fullscreenButton.innerHTML = '<ion-icon name="expand"></ion-icon>';
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>';
     }
   });
 

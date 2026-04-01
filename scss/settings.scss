@@ -1,0 +1,176 @@
+@use "global" as *;
+@use "nav";
+
+// ─── Settings Page ───────────────────────────────────────────
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: calc(var(--nav-height) + var(--space-5));
+  padding-left: var(--space-5);
+  padding-right: var(--space-5);
+  padding-bottom: var(--space-8);
+  gap: var(--space-5);
+}
+
+// Section groups (pairs of cards)
+.topSettingsSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-5);
+  width: 100%;
+  max-width: var(--content-max-width);
+}
+
+// Individual setting card
+.settingsUpdateSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-normal);
+
+  &:hover {
+    border-color: var(--border-medium);
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+  }
+
+  .version {
+    font-size: .85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+
+    strong {
+      color: var(--text-secondary);
+    }
+  }
+
+  button {
+    @extend %btn-base;
+    align-self: flex-start;
+  }
+
+  // Multi-stage delete buttons
+  .deleteAllVideosButtonFinal,
+  .deleteAllImagesButtonFinal {
+    @extend %btn-danger;
+  }
+}
+
+// ─── Video Settings Form ─────────────────────────────────────
+
+.VideoSettingsSection {
+  width: 100%;
+  max-width: var(--content-max-width);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .settingsForm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    .settingsRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .04);
+
+      p {
+        flex: 1;
+        font-size: .9rem;
+        font-weight: var(--font-weight-medium);
+
+        span {
+          display: block;
+          font-size: .78rem;
+          color: var(--text-muted);
+          font-weight: var(--font-weight-normal);
+          margin-top: 2px;
+        }
+      }
+
+      input {
+        width: 180px;
+        text-align: right;
+      }
+    }
+
+    .settingsRowCheckBox {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .04);
+
+      p {
+        flex: 1;
+        font-size: .9rem;
+        font-weight: var(--font-weight-medium);
+
+        span {
+          display: block;
+          font-size: .78rem;
+          color: var(--text-muted);
+          font-weight: var(--font-weight-normal);
+          margin-top: 2px;
+        }
+      }
+
+      input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent-color);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+      }
+    }
+
+    button[type="submit"] {
+      @extend %btn-accent;
+      align-self: flex-end;
+      padding: .65rem 2rem;
+      margin-top: var(--space-3);
+    }
+  }
+}
+
+// ─── Responsive Settings ─────────────────────────────────────
+
+@media (max-width: 700px) {
+  body {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .VideoSettingsSection .settingsForm .settingsRow {
+    flex-direction: column;
+    align-items: flex-start;
+
+    input {
+      width: 100%;
+      text-align: left;
+    }
+  }
+}

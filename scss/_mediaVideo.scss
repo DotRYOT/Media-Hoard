@@ -1,55 +1,164 @@
-@media (max-width: 1000px) {
-  .PostLoadedArea .post-card {
-    flex: 0 0 calc(33.333% - 0.75rem);
-  }
-}
+// ─── Video Gallery Grid ──────────────────────────────────────
 
-@media (max-width: 800px) {
-  .PostLoadedArea .post-card {
-    flex: 0 0 calc(50% - 0.75rem);
-  }
-}
+// Shared post card (used by video gallery main + video player sidebar)
+@mixin post-card {
+  .post-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
 
-@media (max-width: 700px) {
-  .PostLoadedArea .post-card {
-    flex: 0 0 calc(100% - 0.75rem);
-  }
-}
+    &:hover {
+      border-color: var(--border-medium);
+      box-shadow: var(--shadow-soft);
+      transform: translateY(-2px);
+    }
 
-@media (max-width: 580px) {
-  body {
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-direction: column;
-    flex-direction: column;
-    -webkit-flex-wrap: nowrap;
-    flex-wrap: nowrap;
-    -webkit-justify-content: flex-start;
-    justify-content: flex-start;
-    -webkit-align-content: stretch;
-    align-content: stretch;
-    -webkit-align-items: center;
-    align-items: center;
+    .post-link {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
 
-    .leftVideoSection {
-      width: 90vw;
+      .post-thumbnail-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-primary) 100%);
+        overflow: hidden;
+      }
 
-      .belowVideo {
-        gap: 0rem;
-        margin-left: 0rem;
+      .post-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform var(--transition-slow);
+      }
 
-        .videoContent {
-          .videoTitle {
-            font-size: .9rem;
-          }
+      &:hover .post-thumbnail {
+        transform: scale(1.04);
+      }
+
+      .post-thumbnail-fallback {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        color: var(--text-muted);
+        font-size: .82rem;
+
+        .gicon {
+          font-size: 1.8rem;
+          opacity: .6;
         }
+      }
+
+      .post-title {
+        padding: var(--space-3) var(--space-4);
+        font-size: .9rem;
+        font-weight: var(--font-weight-semibold);
+        line-height: 1.35;
+        color: var(--text-color);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
     }
 
-    .rightVideoSection {
-      width: 90vw;
+    .post-date {
+      padding: 0 var(--space-4) var(--space-3);
+      font-size: .78rem;
+      color: var(--text-muted);
     }
   }
+}
 
+// Main video gallery grid
+.PostLoadedArea {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
 
+  @include post-card;
+}
+
+// Playlist Hub
+.playlist-hub {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  width: 100%;
+}
+
+.playlist-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+
+  &:hover {
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+.playlist-title {
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-2);
+}
+
+.playlist-meta {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.playlist-actions {
+  display: flex;
+  gap: var(--space-2);
+
+  button {
+    border-radius: var(--radius-pill);
+    padding: .45rem .9rem;
+    font-size: .82rem;
+    font-weight: var(--font-weight-semibold);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+}
+
+.playlist-play {
+  background: var(--text-color);
+  color: var(--bg-base);
+  border-color: var(--text-color) !important;
+
+  &:hover {
+    background: #fff;
+  }
+}
+
+.playlist-view {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+
+  &:hover {
+    background: var(--bg-surface);
+    color: var(--text-color);
+  }
+}
+
+// Post card mixin export for video player page sidebar
+@mixin video-sidebar-cards {
+  @include post-card;
 }

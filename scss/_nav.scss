@@ -1,157 +1,176 @@
-nav {
-  display: -webkit-flex;
-  display: flex;
-  -webkit-flex-direction: row;
-  flex-direction: row;
-  -webkit-flex-wrap: wrap;
-  flex-wrap: wrap;
-  -webkit-justify-content: space-between;
-  justify-content: space-between;
-  -webkit-align-content: stretch;
-  align-content: stretch;
-  -webkit-align-items: center;
-  align-items: center;
+// ─── Navigation Bar ──────────────────────────────────────────
+// Shared across all pages: gallery nav (.mediaTopNav) and simple nav
 
-  z-index: 999;
-
+// Gallery pages nav (video gallery, image gallery)
+.mediaTopNav {
   position: fixed;
   top: 0;
-
-  @include blur-black;
-
-  width: 100%;
-  height: 3rem;
-
-  border-bottom: .1rem solid var(--border-color);
+  left: 0;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-height);
+  padding: 0 var(--space-5);
+  background: rgba(10, 10, 11, .85);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--border-color);
 
   .navLeft {
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-direction: row;
-    flex-direction: row;
-    -webkit-flex-wrap: wrap;
-    flex-wrap: wrap;
-    -webkit-justify-content: flex-start;
-    justify-content: flex-start;
-    -webkit-align-content: stretch;
-    align-content: stretch;
-    -webkit-align-items: center;
-    align-items: center;
-
-    margin-left: .5rem;
-
     h3 {
+      font-size: 1.05rem;
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -.01em;
+      color: var(--text-color);
+
       span {
-        font-size: .75rem;
+        font-size: .7rem;
+        font-weight: var(--font-weight-medium);
+        color: var(--text-muted);
+        margin-left: var(--space-1);
+        vertical-align: middle;
       }
     }
   }
 
   .navRight {
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-direction: row;
-    flex-direction: row;
-    -webkit-flex-wrap: wrap;
-    flex-wrap: wrap;
-    -webkit-justify-content: flex-end;
-    justify-content: flex-end;
-    -webkit-align-content: stretch;
-    align-content: stretch;
-    -webkit-align-items: center;
-    align-items: center;
-
-    margin-right: .5rem;
-    width: auto;
-    height: 100%;
-
-    .videoPostForm {
-      display: -webkit-flex;
+    .mediaNavActions {
       display: flex;
-      -webkit-flex-direction: row;
-      flex-direction: row;
-      -webkit-flex-wrap: nowrap;
-      flex-wrap: nowrap;
-      -webkit-justify-content: flex-end;
-      justify-content: flex-end;
-      -webkit-align-content: stretch;
-      align-content: stretch;
-      -webkit-align-items: center;
       align-items: center;
+      gap: var(--space-2);
 
-      gap: .5rem;
+      h3 {
+        font-size: .85rem;
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-secondary);
+        margin-right: var(--space-2);
+        padding-right: var(--space-3);
+        border-right: 1px solid var(--border-color);
+      }
 
-      button {
-        display: -webkit-flex;
+      .navAction {
         display: flex;
-        -webkit-flex-direction: row;
-        flex-direction: row;
-        -webkit-flex-wrap: nowrap;
-        flex-wrap: nowrap;
-        -webkit-justify-content: center;
-        justify-content: center;
-        -webkit-align-content: stretch;
-        align-content: stretch;
-        -webkit-align-items: center;
         align-items: center;
+        gap: var(--space-1);
+        padding: .4rem .7rem;
+        border-radius: var(--radius-md);
+        font-size: .8rem;
+        font-weight: var(--font-weight-medium);
+        color: var(--text-secondary);
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all var(--transition-fast);
 
-        border-radius: .25rem;
-
-        padding: 0rem 1rem;
-        height: 2.5rem;
+        .gicon {
+          font-size: 20px;
+        }
 
         p {
-          margin-left: .5rem;
+          margin: 0;
         }
 
-        ion-icon {
-          font-size: 1.5rem;
+        &:hover {
+          background: var(--bg-elevated);
+          border-color: var(--border-color);
+          color: var(--text-color);
         }
       }
     }
+  }
+}
 
-    .videoNav {
-      display: -webkit-flex;
+// Simple nav (video player page, settings page)
+nav:not(.mediaTopNav) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-height);
+  padding: 0 var(--space-5);
+  background: rgba(10, 10, 11, .85);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--border-color);
+
+  .navLeft {
+    h3 {
+      font-size: 1.05rem;
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -.01em;
+      color: var(--text-color);
+
+      span {
+        font-size: .7rem;
+        font-weight: var(--font-weight-medium);
+        color: var(--text-muted);
+        margin-left: var(--space-1);
+        vertical-align: middle;
+      }
+    }
+  }
+
+  .navRight {
+    .videoPostForm {
       display: flex;
-      -webkit-flex-direction: row;
-      flex-direction: row;
-      -webkit-flex-wrap: nowrap;
-      flex-wrap: nowrap;
-      -webkit-justify-content: space-between;
-      justify-content: space-between;
-      -webkit-align-content: stretch;
-      align-content: stretch;
-      -webkit-align-items: center;
       align-items: center;
+      gap: var(--space-1);
 
-      width: 100%;
-      height: 100%;
-
-      gap: .5rem;
+      .hLine {
+        width: 1px;
+        height: 1.5rem;
+        background: var(--border-color);
+        margin: 0 var(--space-2);
+      }
 
       button {
-        display: -webkit-flex;
         display: flex;
-        -webkit-flex-direction: row;
-        flex-direction: row;
-        -webkit-flex-wrap: nowrap;
-        flex-wrap: nowrap;
-        -webkit-justify-content: center;
-        justify-content: center;
-        -webkit-align-content: stretch;
-        align-content: stretch;
-        -webkit-align-items: center;
         align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        transition: all var(--transition-fast);
 
-        border-radius: .25rem;
+        .gicon {
+          font-size: 22px;
+        }
 
-        padding: 0rem 1rem;
-        height: 2.5rem;
-
-        ion-icon {
-          font-size: 1.5rem;
+        &:hover {
+          background: var(--bg-elevated);
+          color: var(--text-color);
         }
       }
     }
+  }
+}
+
+// ─── Responsive Nav ──────────────────────────────────────────
+@media (max-width: 700px) {
+  .mediaTopNav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+
+    .navRight .mediaNavActions {
+      h3 {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 560px) {
+  .mediaTopNav .navRight .mediaNavActions .navAction {
+    p {
+      display: none;
+    }
+
+    padding: .5rem;
   }
 }

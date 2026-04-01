@@ -16,6 +16,7 @@ require_once './scripts/_inc.php';
   <title>Home - Videos</title>
   <link rel="shortcut icon" href="./favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="./css/index.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
@@ -28,14 +29,14 @@ require_once './scripts/_inc.php';
   if (!file_exists("./scripts/yt-dlp.exe")) {
     ?>
     <div class="updateAlert">
-      <ion-icon name="help-outline" title="Update a program"></ion-icon>
+      <span class="gicon" title="Update a program">help</span>
       <h2>Do you want to update/install YT-DLP?</h2>
       <div class="answer">
         <a href="./scripts/updates/_updateYTDLP.php">
-          <ion-icon name="checkmark-outline"></ion-icon>
+          <span class="gicon">check_circle</span>
         </a>
         <a href="./">
-          <ion-icon name="close-circle-outline"></ion-icon>
+          <span class="gicon">cancel</span>
         </a>
       </div>
     </div>
@@ -45,25 +46,28 @@ require_once './scripts/_inc.php';
   <div id="spinner" style="display: none;">
     <l-zoomies size="150" stroke="5" bg-opacity="0.1" speed="1.4" color="#ff4500"></l-zoomies>
   </div>
-  <nav>
+  <nav class="mediaTopNav">
     <div class="navLeft">
       <h3>MediaHoard <span><?= $version; ?></span></h3>
     </div>
     <div class="navRight">
-      <div class="videoPostForm">
+      <div class="videoPostForm mediaNavActions">
         <h3>Videos</h3>
-        <button type="button" name="uploadMenu" onclick="toggleUploadtab()">
-          <ion-icon name="cloud-upload-outline"></ion-icon>
+        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction" aria-label="Upload videos">
+          <span class="gicon">upload</span>
           <p>Upload</p>
         </button>
-        <button type="button" name="imagesPage" onclick="window.location.href='./img/'">
-          <ion-icon name="image-outline"></ion-icon>
+        <button type="button" name="imagesPage" onclick="window.location.href='./img/'" class="navAction" aria-label="Go to images">
+          <span class="gicon">image</span>
+          <p>Images</p>
         </button>
-        <button type="button" onclick="togglePageFiltertab()">
-          <ion-icon name="filter-outline"></ion-icon>
+        <button type="button" onclick="togglePageFiltertab()" class="navAction" aria-label="Open filters">
+          <span class="gicon">filter_alt</span>
+          <p>Filter</p>
         </button>
-        <button type="button" onclick="window.location.href='./settings/'">
-          <ion-icon name="settings-outline"></ion-icon>
+        <button type="button" onclick="window.location.href='./settings/'" class="navAction" aria-label="Open settings">
+          <span class="gicon">settings</span>
+          <p>Settings</p>
         </button>
       </div>
     </div>
@@ -73,7 +77,7 @@ require_once './scripts/_inc.php';
       <div class="topUploadTitle">
         <h3>Choose an option</h3>
         <button type="button" onclick="toggleUploadtab()">
-          <ion-icon name="close-outline"></ion-icon>
+          <span class="gicon">close</span>
         </button>
       </div>
       <form action="./scripts/_downloader.php" id="webVideoUpload" method="get">
@@ -85,7 +89,7 @@ require_once './scripts/_inc.php';
       <form action="./scripts/_uploader.php" id="localVideoUpload" method="post" enctype="multipart/form-data">
         <div class="videoUpload">
           <button type="button" name="uploadFile" onclick="document.getElementById('fileUpload').click();">
-            <ion-icon name="cloud-upload-outline"></ion-icon>
+            <span class="gicon">upload</span>
             <p>Upload Video</p>
           </button>
           <span id="fileNameDisplay" style="font-size: 14px; color: #888;"></span>
@@ -349,20 +353,77 @@ require_once './scripts/_inc.php';
       const tags = tagsMap[post.PUID];
       return Array.isArray(tags) ? tags : [];
     }
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function resolveThumbnailPath(path) {
+      if (typeof path !== 'string') return '';
+      const normalized = path.trim();
+      if (!normalized) return '';
+
+      if (/^(https?:)?\/\//i.test(normalized) || normalized.startsWith('data:')) {
+        return normalized;
+      }
+
+      if (normalized.startsWith('./') || normalized.startsWith('../')) {
+        return normalized;
+      }
+
+      return normalized.startsWith('/') ? `.${normalized}` : `./${normalized}`;
+    }
+
+    function attachThumbnailFallbacks(scope = document) {
+      const thumbnails = scope.querySelectorAll('img.post-thumbnail');
+      thumbnails.forEach((img) => {
+        if (img.dataset.fallbackBound === '1') return;
+        img.dataset.fallbackBound = '1';
+
+        img.addEventListener('error', () => {
+          const wrapper = img.closest('.post-thumbnail-wrap');
+          if (!wrapper || wrapper.querySelector('.post-thumbnail-fallback')) return;
+
+          const title = img.dataset.title || 'Video thumbnail';
+          wrapper.classList.add('is-fallback');
+          wrapper.insertAdjacentHTML('beforeend', `
+            <div class="post-thumbnail-fallback" aria-label="${escapeHtml(title)} thumbnail unavailable">
+              <span class="gicon" aria-hidden="true">movie</span>
+              <span>Preview unavailable</span>
+            </div>
+          `);
+          img.remove();
+        }, { once: true });
+      });
+    }
+
     function createPostCard(post) {
       if (!post || !post.video_path || !post.title) return '';
       const decodedTitle = decodeHTMLEntities(post.title);
-      const thumbnailPath = post.thumbnail_path;
+      const thumbnailPath = resolveThumbnailPath(post.thumbnail_path);
       const videoUID = post.PUID;
       const date = new Date(post.Time * 1000).toLocaleDateString();
       const tags = getPostTags(post);
       const tagsHtml = tags.length
         ? `<div class="post-tags">${tags.map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`).join('')}</div>`
         : '';
+      const thumbnailHtml = thumbnailPath
+        ? `<img src="${thumbnailPath}" alt="${escapeHtml(decodedTitle)} thumbnail" loading="lazy" class="post-thumbnail" data-title="${escapeHtml(decodedTitle)}">`
+        : `<div class="post-thumbnail-fallback" aria-label="${escapeHtml(decodedTitle)} thumbnail unavailable">
+             <span class="gicon" aria-hidden="true">movie</span>
+             <span>Preview unavailable</span>
+           </div>`;
       return `
       <div class="post-card">
         <a href="${buildVideoUrl(post)}" class="post-link">
-          <img src=".${thumbnailPath}" alt="${decodedTitle} thumbnail" loading="lazy" class="post-thumbnail">
+          <div class="post-thumbnail-wrap">
+            ${thumbnailHtml}
+          </div>
           <h3 class="post-title">${decodedTitle}</h3>
         </a>
         <p class="post-date">Posted: ${date}</p>
@@ -393,6 +454,7 @@ require_once './scripts/_inc.php';
     function renderPosts(posts) {
       const container = document.querySelector('.PostLoadedArea');
       container.innerHTML = posts.map(post => createPostCard(post)).join('');
+      attachThumbnailFallbacks(container);
     }
 
     function sortByNewest(posts) {
@@ -570,8 +632,6 @@ require_once './scripts/_inc.php';
     });
   </script>
 
-  <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" crossorigin></script>
 </body>
 
 </html>

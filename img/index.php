@@ -17,6 +17,7 @@ $openMediaTab = $config['openMediaTab'];
   <title>Home - Images</title>
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="../css/imagePage.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
@@ -28,25 +29,28 @@ $openMediaTab = $config['openMediaTab'];
   <div id="spinner" style="display: none;">
     <l-zoomies size="150" stroke="5" bg-opacity="0.1" speed="1.4" color="#ff4500"></l-zoomies>
   </div>
-  <nav>
+  <nav class="mediaTopNav imageTopNav">
     <div class="navLeft">
       <h3>MediaHoard <span><?= $version; ?></span></h3>
     </div>
     <div class="navRight">
-      <div class="videoPostForm">
+      <div class="videoPostForm mediaNavActions imageNavActions">
         <h3>Images</h3>
-        <button type="button" name="uploadMenu" onclick="toggleUploadtab()">
-          <ion-icon name="cloud-upload-outline"></ion-icon>
+        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction" aria-label="Upload images">
+          <span class="gicon">upload</span>
           <p>Upload</p>
         </button>
-        <button type="button" name="videoPage" onclick="window.location.href='../'">
-          <ion-icon name="videocam-outline"></ion-icon>
+        <button type="button" name="videoPage" onclick="window.location.href='../'" class="navAction" aria-label="Go to videos">
+          <span class="gicon">videocam</span>
+          <p>Videos</p>
         </button>
-        <button type="button" onclick="togglePageFiltertab()">
-          <ion-icon name="filter-outline"></ion-icon>
+        <button type="button" onclick="togglePageFiltertab()" class="navAction" aria-label="Open filters">
+          <span class="gicon">filter_alt</span>
+          <p>Filter</p>
         </button>
-        <button type="button" onclick="window.location.href='../settings/'">
-          <ion-icon name="settings-outline"></ion-icon>
+        <button type="button" onclick="window.location.href='../settings/'" class="navAction" aria-label="Open settings">
+          <span class="gicon">settings</span>
+          <p>Settings</p>
         </button>
       </div>
     </div>
@@ -56,13 +60,13 @@ $openMediaTab = $config['openMediaTab'];
       <div class="topUploadTitle">
         <h3>Choose an option</h3>
         <button type="button" onclick="toggleUploadtab()">
-          <ion-icon name="close-outline"></ion-icon>
+          <span class="gicon">close</span>
         </button>
       </div>
       <form id="localImageUpload" method="post" enctype="multipart/form-data">
         <div style="display: flex; align-items: center; gap: 10px;">
           <button type="button" onclick="document.getElementById('fileUpload').click();">
-            <ion-icon name="cloud-upload-outline"></ion-icon>
+            <span class="gicon">upload</span>
             <p>Upload Images</p>
           </button>
           <span id="fileNameDisplay" style="font-size: 14px; color: #888;">No file selected</span>
@@ -86,6 +90,8 @@ $openMediaTab = $config['openMediaTab'];
     </div>
   </div>
   <div class="ImageGrid"></div>
+  <div class="imageFeedStatus" id="imageFeedStatus">Loading images...</div>
+  <div id="imageLoadSentinel" aria-hidden="true"></div>
   <script>
     function setImageUploadProgress(percent) {
       const normalized = Math.max(0, Math.min(100, percent || 0));
@@ -162,38 +168,122 @@ $openMediaTab = $config['openMediaTab'];
       });
     });
 
+    const FEED_CHUNK_SIZE = 48;
     let allPosts = [];
-    function createPostCard(post) {
+    let activePosts = [];
+    let renderedCount = 0;
+    let isRenderingChunk = false;
+    let filterHandlersBound = false;
+
+    const imageGrid = document.querySelector('.ImageGrid');
+    const imageFeedStatus = document.getElementById('imageFeedStatus');
+    const imageLoadSentinel = document.getElementById('imageLoadSentinel');
+
+    function setFeedStatus(message) {
+      if (!imageFeedStatus) return;
+      imageFeedStatus.textContent = message;
+    }
+
+    function createPostCardElement(post, index) {
       const PUID = post.PUID;
-      const image_path = post.image_path;
+      const imagePath = post.image_path;
       const target = '<?= $config['openMediaTab'] ?>' === 'true' ? '_blank' : '_self';
-      return `
-      <div class="image-card">
-        <a href="./imageFiles/_img.php?puid=${PUID}&filePath=${image_path}" target="${target}" class="image-link">
-          <img src="..${image_path}" alt="thumbnail" loading="lazy" class="image-thumbnail">
-        </a>
-      </div>
-    `;
+
+      const card = document.createElement('div');
+      card.className = 'image-card';
+      card.classList.add('is-loading');
+
+      const link = document.createElement('a');
+      link.href = `./imageFiles/_img.php?puid=${encodeURIComponent(PUID)}&filePath=${encodeURIComponent(imagePath)}`;
+      link.target = target;
+      link.className = 'image-link';
+
+      const img = document.createElement('img');
+      img.src = `..${imagePath}`;
+      img.alt = `Image ${PUID}`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.className = 'image-thumbnail';
+
+      if (index < 8) {
+        img.fetchPriority = 'high';
+      }
+
+      const markLoaded = () => {
+        card.classList.remove('is-loading');
+      };
+
+      img.addEventListener('load', markLoaded, { once: true });
+      img.addEventListener('error', markLoaded, { once: true });
+
+      if (img.complete) {
+        requestAnimationFrame(markLoaded);
+      }
+
+      link.appendChild(img);
+      card.appendChild(link);
+      return card;
+    }
+
+    function clearGrid() {
+      if (!imageGrid) return;
+      imageGrid.innerHTML = '';
+      renderedCount = 0;
+      isRenderingChunk = false;
+    }
+
+    function renderNextChunk() {
+      if (!imageGrid || isRenderingChunk) return;
+      if (renderedCount >= activePosts.length) return;
+
+      isRenderingChunk = true;
+      const start = renderedCount;
+      const end = Math.min(renderedCount + FEED_CHUNK_SIZE, activePosts.length);
+      const fragment = document.createDocumentFragment();
+
+      for (let i = start; i < end; i++) {
+        fragment.appendChild(createPostCardElement(activePosts[i], i));
+      }
+
+      imageGrid.appendChild(fragment);
+      renderedCount = end;
+      isRenderingChunk = false;
+
+      if (renderedCount >= activePosts.length) {
+        setFeedStatus(`Showing ${activePosts.length} images`);
+      } else {
+        setFeedStatus(`Loaded ${renderedCount} of ${activePosts.length} images`);
+      }
+    }
+
+    function renderPostsOptimized(posts) {
+      if (!imageGrid) return;
+      if (!Array.isArray(posts) || posts.length === 0) {
+        clearGrid();
+        imageGrid.innerHTML = `<div class="noPosts">No posts available.</div>`;
+        setFeedStatus('No images to show');
+        return;
+      }
+
+      activePosts = posts;
+      clearGrid();
+      renderNextChunk();
     }
 
     function loadPosts(data) {
-      const container = document.querySelector('.ImageGrid');
-      if (!container) return;
+      if (!imageGrid) return;
       if (!Array.isArray(data)) {
-        container.innerHTML = `<div class="noPosts">Invalid data format.</div>`;
+        imageGrid.innerHTML = `<div class="noPosts">Invalid data format.</div>`;
+        setFeedStatus('Failed to parse images');
         return;
       }
       if (data.length === 0) {
-        container.innerHTML = `<div class="noPosts">No posts available.</div>`;
+        imageGrid.innerHTML = `<div class="noPosts">No posts available.</div>`;
+        setFeedStatus('No images found');
         return;
       }
       allPosts = data;
-      renderPosts(sortByNewest(data));
-    }
-
-    function renderPosts(posts) {
-      const container = document.querySelector('.ImageGrid');
-      container.innerHTML = posts.map(post => createPostCard(post)).join('');
+      renderPostsOptimized(sortByNewest(data));
     }
 
     function sortByNewest(posts) {
@@ -214,38 +304,45 @@ $openMediaTab = $config['openMediaTab'];
     }
 
     function setupFilterButtons() {
+      if (filterHandlersBound) return;
+      filterHandlersBound = true;
+
       document.querySelector('.filterTab button:nth-child(1)').addEventListener('click', () => {
-        renderPosts(sortByRandom(allPosts));
+        renderPostsOptimized(sortByRandom(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(2)').addEventListener('click', () => {
-        renderPosts(sortByNewest(allPosts));
+        renderPostsOptimized(sortByNewest(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(3)').addEventListener('click', () => {
-        renderPosts(sortByOldest(allPosts));
+        renderPostsOptimized(sortByOldest(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(4)').addEventListener('click', async () => {
-        const container = document.querySelector('.ImageGrid');
         try {
           const resp = await fetch('./favoriteImages.json');
           if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
           const favs = await resp.json();
           if (!Array.isArray(favs) || favs.length === 0) {
-            container.innerHTML = `<div class="noPosts">No favorite images yet.</div>`;
+            renderPostsOptimized([]);
+            imageGrid.innerHTML = `<div class="noPosts">No favorite images yet.</div>`;
+            setFeedStatus('No favorites found');
             return;
           }
           const favSet = new Set(favs);
           const filtered = allPosts.filter(p => favSet.has(p.PUID));
           if (filtered.length === 0) {
-            container.innerHTML = `<div class="noPosts">No favorite images found.</div>`;
+            renderPostsOptimized([]);
+            imageGrid.innerHTML = `<div class="noPosts">No favorite images found.</div>`;
+            setFeedStatus('No favorites found');
             return;
           }
-          renderPosts(sortByNewest(filtered));
+          renderPostsOptimized(sortByNewest(filtered));
         } catch (error) {
           console.error('Favorites fetch error:', error.message || error);
-          container.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
+          imageGrid.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
+          setFeedStatus('Favorites failed to load');
         }
       });
     }
@@ -276,6 +373,7 @@ $openMediaTab = $config['openMediaTab'];
     }
 
     function fetchAndLoadPosts() {
+      setFeedStatus('Loading images...');
       fetch('./imageFiles/images.json')
         .then(response => {
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -290,15 +388,30 @@ $openMediaTab = $config['openMediaTab'];
           const container = document.querySelector('.ImageGrid');
           if (container) {
             container.innerHTML = `<div class="noPosts">Error loading posts. Please try again later.</div>`;
+            setFeedStatus('Image feed failed to load');
           }
         });
+    }
+
+    if (imageLoadSentinel && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            renderNextChunk();
+          }
+        }
+      }, {
+        root: null,
+        rootMargin: '500px 0px',
+        threshold: 0
+      });
+
+      observer.observe(imageLoadSentinel);
     }
 
     document.addEventListener('DOMContentLoaded', fetchAndLoadPosts);
   </script>
 
-  <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" crossorigin></script>
 </body>
 
 </html>

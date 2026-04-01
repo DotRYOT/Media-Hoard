@@ -184,10 +184,10 @@ function displayMessage($type = 'message')
         $message = $_GET['message'];
         echo '
   <div class="errorHeader">
-    <ion-icon name="help-outline"></ion-icon>
+    <span class="gicon">help</span>
     <h2>' . $message . '</h2>
     <a href="./">
-        <ion-icon name="close-circle-outline"></ion-icon>
+        <span class="gicon">cancel</span>
     </a>
   </div>';
       }
@@ -197,10 +197,10 @@ function displayMessage($type = 'message')
         $error = $_GET['error'];
         echo '
   <div class="errorHeader">
-    <ion-icon name="help-outline"></ion-icon>
+    <span class="gicon">help</span>
     <h2>' . $error . '</h2>
     <a href="./">
-        <ion-icon name="close-circle-outline"></ion-icon>
+        <span class="gicon">cancel</span>
     </a>
   </div>';
       }
@@ -211,7 +211,7 @@ function displayMessage($type = 'message')
   <div class="successAlert">
     <h2>' . $success . '</h2>
     <a href="./">
-        <ion-icon name="close-circle-outline"></ion-icon>
+        <span class="gicon">cancel</span>
     </a>
   </div>';
       }
@@ -220,10 +220,10 @@ function displayMessage($type = 'message')
         $warning = $_GET['warning'];
         echo '
   <div class="warningAlert">
-    <ion-icon name="help-outline"></ion-icon>
+    <span class="gicon">help</span>
     <h2>' . $warning . '</h2>
     <a href="./">
-        <ion-icon name="close-circle-outline"></ion-icon>
+        <span class="gicon">cancel</span>
     </a>
   </div>';
       }

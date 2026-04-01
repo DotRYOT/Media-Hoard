@@ -22,6 +22,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
   <title>Video</title>
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="../css/videoPage.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
 </head>
 
 <body id="videosPage">
@@ -33,10 +34,10 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
       <div class="videoPostForm">
         <div class="hLine"></div>
         <button type="button" onclick="window.location.href='../'">
-          <ion-icon name="home-outline"></ion-icon>
+          <span class="gicon">home</span>
         </button>
         <button type="button" onclick="window.location.href='../settings/'">
-          <ion-icon name="settings-outline"></ion-icon>
+          <span class="gicon">settings</span>
         </button>
         <div class="hLine"></div>
       </div>
@@ -49,11 +50,11 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
         Your browser does not support the video tag.
       </video>
       <div class="controls">
-        <button id="play-pause"><ion-icon name="play"></ion-icon></button>
+        <button id="play-pause"><span class="gicon">play_arrow</span></button>
 
         <!-- Volume control group -->
         <div class="volume-control">
-          <button id="volume"><ion-icon name="volume-high"></ion-icon></button>
+          <button id="volume"><span class="gicon">volume_up</span></button>
           <div class="volume-slider">
             <input type="range" min="0" max="1" step="0.05" value="1">
           </div>
@@ -64,7 +65,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
         </div>
         <div id="time-display">0:00 / 0:00</div>
         <button id="fullscreen">
-          <ion-icon name="expand"></ion-icon>
+          <span class="gicon">fullscreen</span>
         </button>
       </div>
     </div>
@@ -81,10 +82,10 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
       </div>
       <div class="videoSettings">
         <button type="button" id="favoriteBtn" name="favorite" onclick="favoriteVideo()" aria-pressed="false">
-          <ion-icon id="favoriteIcon" name="star-outline"></ion-icon>
+          <span id="favoriteIcon" class="gicon">star_border</span>
         </button>
         <button type="button" name="settings" onclick="toggleSettingsTab()">
-          <ion-icon name="settings-outline"></ion-icon>
+          <span class="gicon">settings</span>
         </button>
       </div>
     </div>
@@ -94,7 +95,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
       <div class="VideoSettings">
         <h3>Video Settings</h3>
         <button type="button" name="closeMenu" onclick="toggleSettingsTab()">
-          <ion-icon name="close-outline"></ion-icon>
+          <span class="gicon">close</span>
         </button>
       </div>
       <div class="deleteVideoContainer">
@@ -103,18 +104,18 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
         </p>
         <button type="button" name="Delete Video" id="DeleteVideoStageOne" style="display: flex;"
           onclick="document.getElementById('DeleteVideoStageTwo').style.display = 'flex'; document.getElementById('DeleteVideoStageOne').style.display = 'none';">
-          <ion-icon name="trash-outline"></ion-icon>
+          <span class="gicon">delete</span>
           <p>Delete Video</p>
         </button>
         <button type="button" name="Delete Video" id="DeleteVideoStageTwo" style="display: none;"
           onclick="document.getElementById('DeleteVideoStageFinal').style.display = 'flex'; document.getElementById('DeleteVideoStageTwo').style.display = 'none';">
-          <ion-icon name="trash-outline"></ion-icon>
+          <span class="gicon">delete</span>
           <p>Are you sure?</p>
         </button>
         <button type="button" name="Delete Video" class="deleteAllVideosButtonFinal" id="DeleteVideoStageFinal"
           style="display: none;"
           onclick="window.location.href='../scripts/utility/_deleteVideo.php?puid=<?= $videoUID; ?>'">
-          <ion-icon name="trash-outline"></ion-icon>
+          <span class="gicon">delete_forever</span>
           <p>Delete Video!</p>
         </button>
       </div>
@@ -125,7 +126,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
         <input type="text" id="videoTagsInput" placeholder="chill, music, tutorial"
           style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #fff; margin-bottom: 8px;">
         <button type="button" id="saveTagsBtn" onclick="saveCurrentVideoTags()" style="display: flex;">
-          <ion-icon name="pricetags-outline"></ion-icon>
+          <span class="gicon">sell</span>
           <p>Save Tags</p>
         </button>
       </div>
@@ -138,7 +139,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
         <input type="text" id="removeSectionEnd" placeholder="End (e.g. 00:00:30 or 30)"
           style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #fff; margin-bottom: 8px;">
         <button type="button" id="removeSectionBtn" onclick="removeVideoSection()" style="display: flex;">
-          <ion-icon name="cut-outline"></ion-icon>
+          <span class="gicon">content_cut</span>
           <p>Remove Section</p>
         </button>
       </div>
@@ -461,7 +462,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
 
         const originalButtonHtml = button.innerHTML;
         button.disabled = true;
-        button.innerHTML = '<ion-icon name="hourglass-outline"></ion-icon><p>Processing...</p>';
+        button.innerHTML = '<span class="gicon">hourglass_top</span><p>Processing...</p>';
 
         const endpoint = <?= json_encode($basePath . '/scripts/utility/_removeVideoSection.php'); ?>;
         fetch(endpoint, {
@@ -512,10 +513,10 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
               const icon = document.getElementById('favoriteIcon');
               const btn = document.getElementById('favoriteBtn');
               if (data.action === 'added') {
-                if (icon) icon.setAttribute('name', 'star');
+                if (icon) icon.textContent = 'star';
                 if (btn) btn.setAttribute('aria-pressed', 'true');
               } else if (data.action === 'removed') {
-                if (icon) icon.setAttribute('name', 'star-outline');
+                if (icon) icon.textContent = 'star_border';
                 if (btn) btn.setAttribute('aria-pressed', 'false');
               }
             } else {
@@ -542,10 +543,10 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
             const icon = document.getElementById('favoriteIcon');
             const btn = document.getElementById('favoriteBtn');
             if (isFav) {
-              if (icon) icon.setAttribute('name', 'star');
+              if (icon) icon.textContent = 'star';
               if (btn) btn.setAttribute('aria-pressed', 'true');
             } else {
-              if (icon) icon.setAttribute('name', 'star-outline');
+              if (icon) icon.textContent = 'star_border';
               if (btn) btn.setAttribute('aria-pressed', 'false');
             }
           })
@@ -584,8 +585,6 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
       });
     </script>
   </div>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <script src="../scripts/videoPlayer.js"></script>
 </body>
 

@@ -10,6 +10,7 @@ $ImageFilePath = $_GET['filePath'];
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $PUID; ?></title>
   <link rel="stylesheet" href="../../css/imagePage.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <link rel="shortcut icon" href="../../favicon.png" type="image/x-icon">
 </head>
 
@@ -20,40 +21,86 @@ $ImageFilePath = $_GET['filePath'];
         <h3>Settings</h3>
         <button type="button" id="deleteAllImagesButtonFirst"
           onclick="document.getElementById('deleteAllImagesButton').style.display = 'flex'; document.getElementById('deleteAllImagesButtonFirst').style.display = 'none';">
-          <ion-icon name="images-outline"></ion-icon>
+          <span class="gicon">image</span>
           <p>Delete Image</p>
         </button>
         <button type="button" id="deleteAllImagesButton"
           onclick="document.getElementById('deleteAllImagesButtonFinal').style.display = 'flex'; document.getElementById('deleteAllImagesButton').style.display = 'none';"
           style="display: none;">
-          <ion-icon name="trash-outline"></ion-icon>
+          <span class="gicon">delete</span>
           <p>Are you sure?</p>
         </button>
         <button type="button" class="deleteAllImagesButtonFinal" id="deleteAllImagesButtonFinal" style="display: none;"
           onclick="window.location.href='../../scripts/utility/_deleteImage.php?puid=<?= $PUID; ?>'">
-          <ion-icon name="trash-outline"></ion-icon>
+          <span class="gicon">delete_forever</span>
           <p>Delete Image</p>
         </button>
       </div>
     </div>
   </div>
-  <div class="settingsButton">
-    <button type="button" id="favoriteBtn" name="favorite" aria-pressed="false" onclick="favoriteImage()">
-      <ion-icon id="favoriteIcon" name="star-outline"></ion-icon>
+  <div class="viewerTopBar">
+    <button type="button" class="viewerBackButton" onclick="goBackToGallery()" aria-label="Back to gallery">
+      <span class="gicon">arrow_back</span>
     </button>
-    <button type="button" onclick="toggleSettingsMenu()">
-      <ion-icon name="ellipsis-vertical-outline"></ion-icon>
-    </button>
+    <div class="viewerMeta">
+      <h4>Image <?= htmlspecialchars($PUID, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?></h4>
+      <p>Click image or press Z to zoom</p>
+    </div>
+    <div class="settingsButton">
+      <button type="button" id="favoriteBtn" name="favorite" aria-pressed="false" onclick="favoriteImage()">
+        <span id="favoriteIcon" class="gicon">star_border</span>
+      </button>
+      <button type="button" onclick="window.open('../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>', '_blank')" aria-label="Open original image">
+        <span class="gicon">open_in_new</span>
+      </button>
+      <button type="button" onclick="toggleSettingsMenu()" aria-label="Open image options">
+        <span class="gicon">more_vert</span>
+      </button>
+    </div>
   </div>
-  <img class="imageViewer" src="../..<?= $ImageFilePath; ?>" alt="">
+  <img class="imageViewer" src="../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" alt="Image <?= htmlspecialchars($PUID, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" decoding="async">
   <script>
-    document.querySelector('.imageViewer').addEventListener('click', function () {
-      this.classList.toggle('zoomed');
-    });
+    const imageViewerEl = document.querySelector('.imageViewer');
+
+    function setZoomState(isZoomed) {
+      if (!imageViewerEl) return;
+      imageViewerEl.classList.toggle('zoomed', isZoomed);
+      document.body.classList.toggle('zoom-active', isZoomed);
+    }
+
+    function toggleZoomState() {
+      if (!imageViewerEl) return;
+      const isZoomed = imageViewerEl.classList.contains('zoomed');
+      setZoomState(!isZoomed);
+    }
+
+    imageViewerEl.addEventListener('click', toggleZoomState);
+
+    function goBackToGallery() {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = '../../img/';
+    }
 
     function toggleSettingsMenu() {
       document.querySelector('.settingsMenu').style.display = document.querySelector('.settingsMenu').style.display === 'flex' ? 'none' : 'flex';
     }
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'z' || event.key === 'Z') {
+        toggleZoomState();
+      }
+      if (event.key === 'Escape') {
+        const settingsMenu = document.querySelector('.settingsMenu');
+        if (settingsMenu.style.display === 'flex') {
+          settingsMenu.style.display = 'none';
+          return;
+        }
+        setZoomState(false);
+      }
+    });
 
     function favoriteImage() {
       const puid = '<?= $PUID; ?>';
@@ -71,10 +118,10 @@ $ImageFilePath = $_GET['filePath'];
             const icon = document.getElementById('favoriteIcon');
             const btn = document.getElementById('favoriteBtn');
             if (data.action === 'added') {
-              if (icon) icon.setAttribute('name', 'star');
+              if (icon) icon.textContent = 'star';
               if (btn) btn.setAttribute('aria-pressed', 'true');
             } else if (data.action === 'removed') {
-              if (icon) icon.setAttribute('name', 'star-outline');
+              if (icon) icon.textContent = 'star_border';
               if (btn) btn.setAttribute('aria-pressed', 'false');
             }
           } else {
@@ -100,10 +147,10 @@ $ImageFilePath = $_GET['filePath'];
           const icon = document.getElementById('favoriteIcon');
           const btn = document.getElementById('favoriteBtn');
           if (isFav) {
-            if (icon) icon.setAttribute('name', 'star');
+            if (icon) icon.textContent = 'star';
             if (btn) btn.setAttribute('aria-pressed', 'true');
           } else {
-            if (icon) icon.setAttribute('name', 'star-outline');
+            if (icon) icon.textContent = 'star_border';
             if (btn) btn.setAttribute('aria-pressed', 'false');
           }
         })
@@ -114,8 +161,6 @@ $ImageFilePath = $_GET['filePath'];
 
     document.addEventListener('DOMContentLoaded', setInitialFavoriteState);
   </script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" crossorigin></script>
 </body>
 
 </html>
