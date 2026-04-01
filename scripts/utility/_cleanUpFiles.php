@@ -4,6 +4,77 @@ require_once __DIR__ . '/../_inc.php';
 $projectRoot = realpath(__DIR__ . '/../..');
 
 /**
+ * Parse .gitignore into an array of pattern strings.
+ */
+function parseGitignore(string $path): array
+{
+  if (!file_exists($path)) {
+    return [];
+  }
+  $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  $patterns = [];
+  foreach ($lines as $line) {
+    $line = trim($line);
+    if ($line === '' || $line[0] === '#') {
+      continue;
+    }
+    $patterns[] = $line;
+  }
+  return $patterns;
+}
+
+/**
+ * Returns true if $relPath (relative to project root, forward-slashes)
+ * matches any pattern in $patterns using basic gitignore semantics.
+ */
+function isGitIgnored(string $relPath, array $patterns): bool
+{
+  $relPath  = str_replace('\\', '/', $relPath);
+  $filename = basename($relPath);
+
+  foreach ($patterns as $pattern) {
+    // Skip negation patterns — not needed here
+    if ($pattern[0] === '!') {
+      continue;
+    }
+
+    // Directory-only patterns (e.g. "video/") — test if path starts with it
+    if (substr($pattern, -1) === '/') {
+      $dir = rtrim($pattern, '/');
+      if ($relPath === $dir || strpos($relPath, $dir . '/') === 0) {
+        return true;
+      }
+      continue;
+    }
+
+    // Root-anchored pattern (starts with /) — match against the full rel path
+    if ($pattern[0] === '/') {
+      if (fnmatch(ltrim($pattern, '/'), $relPath)) {
+        return true;
+      }
+      continue;
+    }
+
+    // Pattern containing a slash — match against the relative path
+    if (strpos($pattern, '/') !== false) {
+      if (fnmatch($pattern, $relPath)) {
+        return true;
+      }
+      continue;
+    }
+
+    // Plain name or glob — match against filename or full rel path
+    if (fnmatch($pattern, $filename) || fnmatch($pattern, $relPath)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+$gitignorePatterns = parseGitignore($projectRoot . '/.gitignore');
+
+/**
  * Expected file structure for managed/static directories.
  * Paths are relative to the project root.
  *
@@ -17,6 +88,7 @@ $expectedStructure = [
 
   // Project root — static files only
   '' => [
+    '.gitignore',
     'config.json',
     'favicon.png',
     'index.php',
@@ -91,6 +163,17 @@ foreach ($expectedStructure as $relDir => $allowedFiles) {
 
     // Never delete JSON files — they contain critical user data
     if (strtolower(pathinfo($item, PATHINFO_EXTENSION)) === 'json') {
+      continue;
+    }
+
+    // Never delete dotfiles (.gitignore, .htaccess, etc.)
+    if ($item[0] === '.') {
+      continue;
+    }
+
+    // Respect .gitignore — locally-present gitignored files are kept for dev/testing
+    $relFilePath = ($relDir === '' ? '' : $relDir . '/') . $item;
+    if (isGitIgnored($relFilePath, $gitignorePatterns)) {
       continue;
     }
 
