@@ -109,29 +109,42 @@ body#videosPage {
         transition: width var(--transition-normal);
 
         input[type="range"] {
-          width: 80px;
-          height: 4px;
+          width: 68px;
+          height: 12px;
           appearance: none;
-          background: rgba(255, 255, 255, .25);
-          border-radius: var(--radius-pill);
+          background: transparent;
           outline: none;
           border: none;
           cursor: pointer;
           margin-left: var(--space-2);
+          padding: 0;
+
+          &::-webkit-slider-runnable-track {
+            height: 4px;
+            background: rgba(255, 255, 255, .25);
+            border-radius: var(--radius-pill);
+          }
 
           &::-webkit-slider-thumb {
             appearance: none;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             background: #fff;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+            margin-top: -4px;
+          }
+
+          &::-moz-range-track {
+            height: 4px;
+            background: rgba(255, 255, 255, .25);
+            border-radius: var(--radius-pill);
           }
 
           &::-moz-range-thumb {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             background: #fff;
             border-radius: 50%;
             cursor: pointer;
@@ -146,7 +159,7 @@ body#videosPage {
 
       &.visible .volume-slider,
       &:hover .volume-slider {
-        width: 96px;
+        width: 84px;
       }
     }
 
