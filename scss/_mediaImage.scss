@@ -170,17 +170,28 @@
     margin-top: var(--nav-height);
     object-fit: contain;
     cursor: zoom-in;
-    transition: transform var(--transition-normal);
+    transition: transform 0.3s ease;
+    transform-origin: center center;
 
     &.zoomed {
       max-width: none;
       max-height: none;
-      cursor: zoom-out;
+      width: auto;
+      height: auto;
+      cursor: grab;
+      transform: scale(2);
+      transform-origin: top left;
+    }
+
+    &.zoomed:active {
+      cursor: grabbing;
     }
   }
 
   &.zoom-active {
     overflow: auto;
+    justify-content: flex-start;
+    align-items: flex-start;
 
     .viewerTopBar {
       opacity: 0;
@@ -190,6 +201,9 @@
 
     .imageViewer {
       margin-top: 0;
+      min-width: 200%;
+      min-height: 200%;
+      object-fit: none;
     }
   }
 

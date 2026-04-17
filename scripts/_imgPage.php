@@ -71,20 +71,48 @@ $ImageFilePath = $_GET['filePath'];
       </button>
     </div>
   </div>
-  <img class="imageViewer" src="../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" alt="Image <?= htmlspecialchars($PUID, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" decoding="async">
+  <img class="imageViewer" src="../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" alt="Image <?= htmlspecialchars($PUID, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" decoding="async" draggable="false">
   <script>
     const imageViewerEl = document.querySelector('.imageViewer');
 
-    function setZoomState(isZoomed) {
+    // Prevent default drag behavior
+    imageViewerEl.addEventListener('dragstart', (e) => e.preventDefault());
+
+    function setZoomState(isZoomed, clickX = null, clickY = null) {
       if (!imageViewerEl) return;
       imageViewerEl.classList.toggle('zoomed', isZoomed);
       document.body.classList.toggle('zoom-active', isZoomed);
+
+      if (isZoomed && clickX !== null && clickY !== null) {
+        // Wait for transition to start, then scroll to click position
+        requestAnimationFrame(() => {
+          const scrollX = clickX * 2 - window.innerWidth / 2;
+          const scrollY = clickY * 2 - window.innerHeight / 2;
+          window.scrollTo({
+            left: Math.max(0, scrollX),
+            top: Math.max(0, scrollY),
+            behavior: 'instant'
+          });
+        });
+      } else if (!isZoomed) {
+        window.scrollTo(0, 0);
+      }
     }
 
-    function toggleZoomState() {
+    function toggleZoomState(event) {
       if (!imageViewerEl) return;
       const isZoomed = imageViewerEl.classList.contains('zoomed');
-      setZoomState(!isZoomed);
+      
+      if (!isZoomed && event) {
+        // Zooming in - scroll to click position
+        const rect = imageViewerEl.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+        setZoomState(true, clickX, clickY);
+      } else {
+        // Zooming out
+        setZoomState(false);
+      }
     }
 
     imageViewerEl.addEventListener('click', toggleZoomState);
@@ -103,7 +131,7 @@ $ImageFilePath = $_GET['filePath'];
 
     document.addEventListener('keydown', function (event) {
       if (event.key === 'z' || event.key === 'Z') {
-        toggleZoomState();
+        toggleZoomState(null);
       }
       if (event.key === 'Escape') {
         const settingsMenu = document.querySelector('.settingsMenu');
