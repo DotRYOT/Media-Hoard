@@ -73,6 +73,10 @@ $openMediaTab = $config['openMediaTab'];
           <div id="status"></div>
         </div>
         <input type="file" name="images[]" id="fileUpload" accept="image/*" multiple required style="display: none;">
+        <div style="margin-top: 10px;">
+          <input type="text" name="category" id="categoryInput" placeholder="Category/Person name (optional)" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+          <small style="color: #888;">Separate multiple with commas</small>
+        </div>
         <button type="submit" name="upload">Upload</button>
         <div id="imageUploadProgressWrap">
           <progress id="imageUploadProgress" value="0" max="100"></progress>
@@ -87,6 +91,7 @@ $openMediaTab = $config['openMediaTab'];
       <button>Newest</button>
       <button>Oldest</button>
       <button>Favorites</button>
+      <button>Categories</button>
     </div>
   </div>
   <div class="ImageGrid"></div>
@@ -154,6 +159,7 @@ $openMediaTab = $config['openMediaTab'];
               fetchAndLoadPosts();
               $('#fileUpload').val('');
               $('#fileNameDisplay').text('No file selected');
+              $('#categoryInput').val('');
             }
           },
           error: function (jqXHR) {
@@ -174,6 +180,10 @@ $openMediaTab = $config['openMediaTab'];
     let renderedCount = 0;
     let isRenderingChunk = false;
     let filterHandlersBound = false;
+    let categoriesMap = {};
+    let activeCategory = '';
+    let isCategoryHubMode = false;
+    const categoriesEndpoint = '../scripts/utility/_imageCategories.php';
 
     const imageGrid = document.querySelector('.ImageGrid');
     const imageFeedStatus = document.getElementById('imageFeedStatus');
@@ -233,7 +243,7 @@ $openMediaTab = $config['openMediaTab'];
     }
 
     function renderNextChunk() {
-      if (!imageGrid || isRenderingChunk) return;
+      if (!imageGrid || isRenderingChunk || isCategoryHubMode) return;
       if (renderedCount >= activePosts.length) return;
 
       isRenderingChunk = true;
@@ -258,6 +268,7 @@ $openMediaTab = $config['openMediaTab'];
 
     function renderPostsOptimized(posts) {
       if (!imageGrid) return;
+      isCategoryHubMode = false;
       if (!Array.isArray(posts) || posts.length === 0) {
         clearGrid();
         imageGrid.innerHTML = `<div class="noPosts">No posts available.</div>`;
@@ -303,6 +314,156 @@ $openMediaTab = $config['openMediaTab'];
       return shuffled;
     }
 
+    function normalizeCategory(cat) {
+      return (cat || '').trim().toLowerCase();
+    }
+
+    function getPostCategories(post) {
+      if (!post || !post.PUID) return [];
+      const cats = categoriesMap[post.PUID];
+      return Array.isArray(cats) ? cats : [];
+    }
+
+    function buildCategories() {
+      const categoryMap = new Map();
+
+      allPosts.forEach(post => {
+        const cats = getPostCategories(post);
+        cats.forEach(cat => {
+          const normalized = normalizeCategory(cat);
+          if (!normalized) return;
+          if (!categoryMap.has(normalized)) {
+            categoryMap.set(normalized, { displayName: cat, posts: [] });
+          }
+          categoryMap.get(normalized).posts.push(post);
+        });
+      });
+
+      const categories = Array.from(categoryMap.entries()).map(([key, data]) => ({
+        key,
+        displayName: data.displayName,
+        posts: sortByNewest(data.posts),
+        count: data.posts.length
+      }));
+
+      categories.sort((a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName));
+      return categories;
+    }
+
+    function ensureCategoryStyles() {
+      if (document.getElementById('image-category-styles')) return;
+      const style = document.createElement('style');
+      style.id = 'image-category-styles';
+      style.textContent = `
+        .category-hub {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          padding: 20px;
+        }
+
+        .category-card {
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 12px;
+          padding: 12px;
+          background: rgba(255,255,255,0.03);
+        }
+
+        .category-title {
+          font-size: 16px;
+          margin-bottom: 8px;
+          font-weight: 700;
+        }
+
+        .category-meta {
+          font-size: 12px;
+          opacity: 0.8;
+          margin-bottom: 10px;
+        }
+
+        .category-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .category-actions button {
+          border: none;
+          border-radius: 999px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .category-view {
+          background: #fff;
+          color: #000;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    function renderCategoriesHub() {
+      ensureCategoryStyles();
+      isCategoryHubMode = true;
+      activePosts = [];
+      renderedCount = 0;
+      const categories = buildCategories();
+
+      if (categories.length === 0) {
+        imageGrid.innerHTML = `<div class="noPosts">No categories yet. Add categories when uploading images.</div>`;
+        setFeedStatus('No categories found');
+        return;
+      }
+
+      imageGrid.innerHTML = `
+        <div class="category-hub">
+          ${categories.map(cat => `
+            <div class="category-card">
+              <div class="category-title">${cat.displayName}</div>
+              <div class="category-meta">${cat.count} image${cat.count === 1 ? '' : 's'}</div>
+              <div class="category-actions">
+                <button type="button" class="category-view" data-category="${encodeURIComponent(cat.key)}">View</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      setFeedStatus(`${categories.length} categories`);
+
+      // Attach click handlers for category cards
+      imageGrid.querySelectorAll('.category-view').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cat = decodeURIComponent(btn.dataset.category || '');
+          applyCategoryFilter(cat);
+        });
+      });
+    }
+
+    function applyCategoryFilter(cat) {
+      const normalized = normalizeCategory(cat);
+
+      if (!normalized) {
+        activeCategory = '';
+        renderPostsOptimized(sortByNewest(allPosts));
+        return;
+      }
+
+      activeCategory = normalized;
+
+      const filtered = allPosts.filter(post => {
+        const cats = getPostCategories(post).map(normalizeCategory);
+        return cats.includes(normalized);
+      });
+
+      if (filtered.length === 0) {
+        imageGrid.innerHTML = `<div class="noPosts">No images found for "${cat}".</div>`;
+        setFeedStatus('No images found');
+        return;
+      }
+
+      renderPostsOptimized(sortByNewest(filtered));
+    }
+
     function setupFilterButtons() {
       if (filterHandlersBound) return;
       filterHandlersBound = true;
@@ -345,6 +506,11 @@ $openMediaTab = $config['openMediaTab'];
           setFeedStatus('Favorites failed to load');
         }
       });
+
+      document.querySelector('.filterTab button:nth-child(5)').addEventListener('click', () => {
+        activeCategory = '';
+        renderCategoriesHub();
+      });
     }
 
     function decodeHTMLEntities(text) {
@@ -374,13 +540,18 @@ $openMediaTab = $config['openMediaTab'];
 
     function fetchAndLoadPosts() {
       setFeedStatus('Loading images...');
-      fetch('./imageFiles/images.json')
-        .then(response => {
+      Promise.all([
+        fetch('./imageFiles/images.json').then(response => {
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           return response.json();
-        })
-        .then(data => {
-          loadPosts(data);
+        }),
+        fetch(categoriesEndpoint)
+          .then(response => response.ok ? response.json() : { success: true, categoriesMap: {} })
+          .catch(() => ({ success: true, categoriesMap: {} }))
+      ])
+        .then(([postData, categoriesData]) => {
+          categoriesMap = categoriesData && categoriesData.success && categoriesData.categoriesMap ? categoriesData.categoriesMap : {};
+          loadPosts(postData);
           setupFilterButtons();
         })
         .catch(error => {

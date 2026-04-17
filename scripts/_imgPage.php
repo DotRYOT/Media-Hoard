@@ -19,6 +19,16 @@ $ImageFilePath = $_GET['filePath'];
     <div class="settingsMenuItem">
       <div class="settingsMenuContainer">
         <h3>Settings</h3>
+        <div class="categorySection">
+          <label for="categoryInput">Categories/People:</label>
+          <div class="categoryInputWrap">
+            <input type="text" id="categoryInput" placeholder="Enter names separated by commas">
+            <button type="button" id="saveCategoryBtn" onclick="saveCategories()">
+              <span class="gicon">save</span>
+            </button>
+          </div>
+          <div id="categoryList" class="categoryChips"></div>
+        </div>
         <button type="button" id="deleteAllImagesButtonFirst"
           onclick="document.getElementById('deleteAllImagesButton').style.display = 'flex'; document.getElementById('deleteAllImagesButtonFirst').style.display = 'none';">
           <span class="gicon">image</span>
@@ -49,6 +59,9 @@ $ImageFilePath = $_GET['filePath'];
     <div class="settingsButton">
       <button type="button" id="favoriteBtn" name="favorite" aria-pressed="false" onclick="favoriteImage()">
         <span id="favoriteIcon" class="gicon">star_border</span>
+      </button>
+      <button type="button" id="categoryBtn" onclick="toggleSettingsMenu()" aria-label="Edit categories" title="Edit categories">
+        <span class="gicon">person</span>
       </button>
       <button type="button" onclick="window.open('../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>', '_blank')" aria-label="Open original image">
         <span class="gicon">open_in_new</span>
@@ -160,7 +173,109 @@ $ImageFilePath = $_GET['filePath'];
     }
 
     document.addEventListener('DOMContentLoaded', setInitialFavoriteState);
+
+    // Category management
+    let currentCategories = [];
+
+    function loadCategories() {
+      const puid = '<?= $PUID; ?>';
+      fetch(`../../scripts/utility/_imageCategories.php?puid=${encodeURIComponent(puid)}`)
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.categories)) {
+            currentCategories = data.categories;
+            renderCategories();
+            document.getElementById('categoryInput').value = currentCategories.join(', ');
+          }
+        })
+        .catch(err => console.error('Failed to load categories:', err));
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categoryList');
+      if (!container) return;
+      if (currentCategories.length === 0) {
+        container.innerHTML = '<span style="color: #888; font-size: 12px;">No categories assigned</span>';
+        return;
+      }
+      container.innerHTML = currentCategories.map(cat => 
+        `<span class="category-chip">${cat}</span>`
+      ).join('');
+    }
+
+    function saveCategories() {
+      const puid = '<?= $PUID; ?>';
+      const input = document.getElementById('categoryInput');
+      const categories = input.value.split(',').map(c => c.trim()).filter(c => c !== '');
+      
+      fetch('../../scripts/utility/_imageCategories.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ puid, categories })
+      })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            currentCategories = data.categories || [];
+            renderCategories();
+            input.value = currentCategories.join(', ');
+          } else {
+            console.error('Failed to save categories:', data.error);
+          }
+        })
+        .catch(err => console.error('Error saving categories:', err));
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCategories);
   </script>
+  <style>
+    .categorySection {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .categorySection label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #ccc;
+    }
+    .categoryInputWrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .categoryInputWrap input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #222;
+      color: #fff;
+      font-size: 14px;
+    }
+    .categoryInputWrap button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      background: #ff4500;
+      color: #fff;
+      cursor: pointer;
+    }
+    .categoryChips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .category-chip {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #fff;
+    }
+  </style>
 </body>
 
 </html>

@@ -52,6 +52,10 @@ if (!file_exists("./img/favoriteImages.json")) {
   copy("./scripts/utility/favoriteImages.json", "./img/favoriteImages.json");
 }
 
+if (!file_exists("./img/categories.json")) {
+  file_put_contents("./img/categories.json", json_encode(new stdClass()));
+}
+
 if (!file_exists("./video/_video.php")) {
   copy("./scripts/_video.php", "./video/_video.php");
 }

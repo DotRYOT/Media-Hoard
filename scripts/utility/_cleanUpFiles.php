@@ -128,6 +128,7 @@ $expectedStructure = [
   'img' => [
     'favoriteImages.json',
     'index.php',
+    'categories.json',
   ],
 
   // Image files directory fixed files (PUID subdirs are user data — not touched)

@@ -17,6 +17,7 @@ $configFile = '../config.json';
 $uploadDir = '../img/imageFiles/';
 $imageJsonFile = '../img/imageFiles/images.json';
 $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+$categoriesFile = '../img/categories.json';
 
 // === Load Config === //
 if (!file_exists($configFile)) {
@@ -140,6 +141,36 @@ try {
   }
 } catch (\Exception $e) {
   jsonError("Failed to write to images.json: " . $e->getMessage());
+}
+
+// === Handle Categories === //
+$category = isset($_POST['category']) ? trim($_POST['category']) : '';
+if ($category !== '') {
+  // Ensure categories.json exists
+  if (!file_exists($categoriesFile)) {
+    file_put_contents($categoriesFile, '{}');
+  }
+
+  // Load existing categories
+  $existingCategories = json_decode(file_get_contents($categoriesFile), true);
+  if (!is_array($existingCategories)) {
+    $existingCategories = [];
+  }
+
+  // Add category to each uploaded image
+  foreach ($newImagesData as $imageData) {
+    $puid = $imageData['PUID'];
+    // Split by comma if multiple categories provided
+    $categoryList = array_map('trim', explode(',', $category));
+    $categoryList = array_filter($categoryList, fn($c) => $c !== '');
+    $categoryList = array_values(array_unique($categoryList));
+    if (count($categoryList) > 0) {
+      $existingCategories[$puid] = $categoryList;
+    }
+  }
+
+  // Write back to categories.json
+  file_put_contents($categoriesFile, json_encode($existingCategories, JSON_PRETTY_PRINT));
 }
 
 // === Success response === //

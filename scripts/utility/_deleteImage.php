@@ -16,5 +16,15 @@ foreach ($json as $key => $entry) {
 
 file_put_contents("../../img/imageFiles/images.json", json_encode($json, JSON_PRETTY_PRINT));
 
+// Also remove from categories.json if exists
+$categoriesFile = "../../img/categories.json";
+if (file_exists($categoriesFile)) {
+  $categories = json_decode(file_get_contents($categoriesFile), true);
+  if (is_array($categories) && isset($categories[$PUID])) {
+    unset($categories[$PUID]);
+    file_put_contents($categoriesFile, json_encode($categories, JSON_PRETTY_PRINT));
+  }
+}
+
 $success = generateMessageUrl("Image deleted successfully.", 'success');
 header("Location: ../../img/{$success}");

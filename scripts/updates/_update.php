@@ -155,7 +155,8 @@ function shouldSkipPath($relativePath)
     'video/posts.json',
     'video/favoriteVideos.json',
     'video/tags.json',
-    'img/favoriteImages.json'
+    'img/favoriteImages.json',
+    'img/categories.json'
   ];
 
   foreach ($protectedPrefixes as $prefix) {
