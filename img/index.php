@@ -363,21 +363,47 @@ $openMediaTab = $config['openMediaTab'];
         }
 
         .category-card {
+          position: relative;
           border: 1px solid rgba(255,255,255,0.18);
           border-radius: 12px;
+          overflow: hidden;
+          min-height: 180px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+        }
+
+        .category-card-bg {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          z-index: 0;
+        }
+
+        .category-card-bg::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%);
+        }
+
+        .category-card-content {
+          position: relative;
+          z-index: 1;
           padding: 12px;
-          background: rgba(255,255,255,0.03);
         }
 
         .category-title {
-          font-size: 16px;
-          margin-bottom: 8px;
+          font-size: 18px;
+          margin-bottom: 4px;
           font-weight: 700;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .category-meta {
           font-size: 12px;
-          opacity: 0.8;
+          opacity: 0.85;
           margin-bottom: 10px;
         }
 
@@ -417,15 +443,20 @@ $openMediaTab = $config['openMediaTab'];
 
       imageGrid.innerHTML = `
         <div class="category-hub">
-          ${categories.map(cat => `
+          ${categories.map(cat => {
+            const coverImage = cat.posts[0]?.image_path ? `..${cat.posts[0].image_path}` : '';
+            return `
             <div class="category-card">
-              <div class="category-title">${cat.displayName}</div>
-              <div class="category-meta">${cat.count} image${cat.count === 1 ? '' : 's'}</div>
-              <div class="category-actions">
-                <button type="button" class="category-view" data-category="${encodeURIComponent(cat.key)}">View</button>
+              <div class="category-card-bg" style="background-image: url('${coverImage}')"></div>
+              <div class="category-card-content">
+                <div class="category-title">${cat.displayName}</div>
+                <div class="category-meta">${cat.count} image${cat.count === 1 ? '' : 's'}</div>
+                <div class="category-actions">
+                  <button type="button" class="category-view" data-category="${encodeURIComponent(cat.key)}">View</button>
+                </div>
               </div>
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
       `;
       setFeedStatus(`${categories.length} categories`);
