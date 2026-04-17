@@ -355,11 +355,17 @@ $openMediaTab = $config['openMediaTab'];
       const style = document.createElement('style');
       style.id = 'image-category-styles';
       style.textContent = `
+        .ImageGrid:has(.category-hub) {
+          display: block !important;
+        }
+
         .category-hub {
-          display: grid;
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
           gap: 12px;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           padding: 20px;
+          width: 100%;
         }
 
         .category-card {
@@ -367,7 +373,9 @@ $openMediaTab = $config['openMediaTab'];
           border: 1px solid rgba(255,255,255,0.18);
           border-radius: 12px;
           overflow: hidden;
-          min-height: 180px;
+          width: 220px;
+          height: 180px;
+          flex: 0 0 220px;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
@@ -423,6 +431,13 @@ $openMediaTab = $config['openMediaTab'];
         .category-view {
           background: #fff;
           color: #000;
+        }
+
+        @media (max-width: 560px) {
+          .category-card {
+            width: 100%;
+            flex: 1 1 100%;
+          }
         }
       `;
       document.head.appendChild(style);
