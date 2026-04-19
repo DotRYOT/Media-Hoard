@@ -10,7 +10,8 @@ $ImageFilePath = $_GET['filePath'];
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $PUID; ?></title>
   <link rel="stylesheet" href="../../css/imagePage.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <link rel="shortcut icon" href="../../favicon.png" type="image/x-icon">
 </head>
 
@@ -18,7 +19,15 @@ $ImageFilePath = $_GET['filePath'];
   <div class="settingsMenu" style="display: none;">
     <div class="settingsMenuItem">
       <div class="settingsMenuContainer">
-        <h3>Settings</h3>
+        <div class="categoryHeader">
+          <p>Settings</p>
+          <button type="button" name="toggleSettingsMenu" onclick="toggleSettingsMenu()">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+              <path
+                d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
+            </svg>
+          </button>
+        </div>
         <div class="categorySection">
           <label for="categoryInput">Categories/People:</label>
           <div class="categoryInputWrap">
@@ -60,10 +69,13 @@ $ImageFilePath = $_GET['filePath'];
       <button type="button" id="favoriteBtn" name="favorite" aria-pressed="false" onclick="favoriteImage()">
         <span id="favoriteIcon" class="gicon">star_border</span>
       </button>
-      <button type="button" id="categoryBtn" onclick="toggleSettingsMenu()" aria-label="Edit categories" title="Edit categories">
+      <button type="button" id="categoryBtn" onclick="toggleSettingsMenu()" aria-label="Edit categories"
+        title="Edit categories">
         <span class="gicon">person</span>
       </button>
-      <button type="button" onclick="window.open('../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>', '_blank')" aria-label="Open original image">
+      <button type="button"
+        onclick="window.open('../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>', '_blank')"
+        aria-label="Open original image">
         <span class="gicon">open_in_new</span>
       </button>
       <button type="button" onclick="toggleSettingsMenu()" aria-label="Open image options">
@@ -71,7 +83,8 @@ $ImageFilePath = $_GET['filePath'];
       </button>
     </div>
   </div>
-  <img class="imageViewer" src="../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" alt="Image <?= htmlspecialchars($PUID, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" decoding="async" draggable="false">
+  <img class="imageViewer" src="../..<?= htmlspecialchars($ImageFilePath, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>"
+    alt="Image <?= htmlspecialchars($PUID, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" decoding="async" draggable="false">
   <script>
     const imageViewerEl = document.querySelector('.imageViewer');
 
@@ -102,7 +115,7 @@ $ImageFilePath = $_GET['filePath'];
     function toggleZoomState(event) {
       if (!imageViewerEl) return;
       const isZoomed = imageViewerEl.classList.contains('zoomed');
-      
+
       if (!isZoomed && event) {
         // Zooming in - scroll to click position
         const rect = imageViewerEl.getBoundingClientRect();
@@ -226,7 +239,7 @@ $ImageFilePath = $_GET['filePath'];
         container.innerHTML = '<span style="color: #888; font-size: 12px;">No categories assigned</span>';
         return;
       }
-      container.innerHTML = currentCategories.map(cat => 
+      container.innerHTML = currentCategories.map(cat =>
         `<span class="category-chip">${cat}</span>`
       ).join('');
     }
@@ -235,7 +248,7 @@ $ImageFilePath = $_GET['filePath'];
       const puid = '<?= $PUID; ?>';
       const input = document.getElementById('categoryInput');
       const categories = input.value.split(',').map(c => c.trim()).filter(c => c !== '');
-      
+
       fetch('../../scripts/utility/_imageCategories.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,19 +273,22 @@ $ImageFilePath = $_GET['filePath'];
     .categorySection {
       margin-bottom: 15px;
       padding-bottom: 15px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     .categorySection label {
       display: block;
       margin-bottom: 8px;
       font-size: 14px;
       color: #ccc;
     }
+
     .categoryInputWrap {
       display: flex;
       gap: 8px;
       margin-bottom: 10px;
     }
+
     .categoryInputWrap input {
       flex: 1;
       padding: 8px 12px;
@@ -282,6 +298,7 @@ $ImageFilePath = $_GET['filePath'];
       color: #fff;
       font-size: 14px;
     }
+
     .categoryInputWrap button {
       padding: 8px 12px;
       border-radius: 6px;
@@ -290,14 +307,16 @@ $ImageFilePath = $_GET['filePath'];
       color: #fff;
       cursor: pointer;
     }
+
     .categoryChips {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
     }
+
     .category-chip {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 999px;
       padding: 4px 12px;
       font-size: 12px;

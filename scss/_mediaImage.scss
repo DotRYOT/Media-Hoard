@@ -72,8 +72,13 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 200%; }
-  100% { background-position: -200% -200%; }
+  0% {
+    background-position: 200% 200%;
+  }
+
+  100% {
+    background-position: -200% -200%;
+  }
 }
 
 // ─── Image Viewer Page ───────────────────────────────────────
@@ -223,6 +228,8 @@
       .settingsMenuContainer {
         display: flex;
         flex-direction: column;
+        align-items: stretch;
+
         gap: var(--space-4);
         padding: var(--space-6);
         min-width: min(400px, 90vw);
@@ -231,10 +238,25 @@
         border-radius: var(--radius-xl);
         box-shadow: var(--shadow-lift);
 
-        h3 {
-          font-size: 1.1rem;
-          font-weight: var(--font-weight-semibold);
+        .categoryHeader {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+
+          p {
+            font-size: 1.1rem;
+            font-weight: var(--font-weight-semibold);
+          }
+
+          button {
+            margin-left: auto;
+            padding: .4rem;
+            line-height: 0;
+          }
         }
+
 
         button {
           display: flex;
