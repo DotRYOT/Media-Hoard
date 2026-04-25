@@ -16,7 +16,8 @@ require_once './scripts/_inc.php';
   <title>Home - Videos</title>
   <link rel="shortcut icon" href="./favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="./css/index.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
@@ -53,11 +54,13 @@ require_once './scripts/_inc.php';
     <div class="navRight">
       <div class="videoPostForm mediaNavActions">
         <h3>Videos</h3>
-        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction" aria-label="Upload videos">
+        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction"
+          aria-label="Upload videos">
           <span class="gicon">upload</span>
           <p>Upload</p>
         </button>
-        <button type="button" name="imagesPage" onclick="window.location.href='./img/'" class="navAction" aria-label="Go to images">
+        <button type="button" name="imagesPage" onclick="window.location.href='./img/'" class="navAction"
+          aria-label="Go to images">
           <span class="gicon">image</span>
           <p>Images</p>
         </button>
@@ -105,7 +108,7 @@ require_once './scripts/_inc.php';
     </div>
   </div>
   <div class="pageFiltertab" style="display: none;">
-      <div class="filterTab">
+    <div class="filterTab">
       <button>Random</button>
       <button>Newest</button>
       <button>Oldest</button>

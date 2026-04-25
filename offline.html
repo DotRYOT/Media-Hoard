@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - MediaHoard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      gap: 16px;
+      text-align: center;
+      padding: 24px;
+    }
+    h1 { font-size: 2rem; color: #ff4500; }
+    p  { color: #aaa; max-width: 420px; line-height: 1.6; }
+    button {
+      margin-top: 8px;
+      background: #ff4500;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #e03d00; }
+  </style>
+</head>
+<body>
+  <h1>You're offline</h1>
+  <p>
+    MediaHoard couldn't reach the server. Connect to the network and visit
+    the images page at least once while online so the browser can cache it.
+  </p>
+  <button onclick="location.reload()">Try again</button>
+</body>
+</html>

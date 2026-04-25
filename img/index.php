@@ -17,7 +17,8 @@ $openMediaTab = $config['openMediaTab'];
   <title>Home - Images</title>
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="../css/imagePage.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
@@ -36,11 +37,13 @@ $openMediaTab = $config['openMediaTab'];
     <div class="navRight">
       <div class="videoPostForm mediaNavActions imageNavActions">
         <h3>Images</h3>
-        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction" aria-label="Upload images">
+        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction"
+          aria-label="Upload images">
           <span class="gicon">upload</span>
           <p>Upload</p>
         </button>
-        <button type="button" name="videoPage" onclick="window.location.href='../'" class="navAction" aria-label="Go to videos">
+        <button type="button" name="videoPage" onclick="window.location.href='../'" class="navAction"
+          aria-label="Go to videos">
           <span class="gicon">videocam</span>
           <p>Videos</p>
         </button>
@@ -48,7 +51,8 @@ $openMediaTab = $config['openMediaTab'];
           <span class="gicon">filter_alt</span>
           <p>Filter</p>
         </button>
-        <button type="button" onclick="window.location.href='../settings/'" class="navAction" aria-label="Open settings">
+        <button type="button" onclick="window.location.href='../settings/'" class="navAction"
+          aria-label="Open settings">
           <span class="gicon">settings</span>
           <p>Settings</p>
         </button>
@@ -74,7 +78,8 @@ $openMediaTab = $config['openMediaTab'];
         </div>
         <input type="file" name="images[]" id="fileUpload" accept="image/*" multiple required style="display: none;">
         <div style="margin-top: 10px;">
-          <input type="text" name="category" id="categoryInput" placeholder="Category/Person name (optional)" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+          <input type="text" name="category" id="categoryInput" placeholder="Category/Person name (optional)"
+            style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
           <small style="color: #888;">Separate multiple with commas</small>
         </div>
         <button type="submit" name="upload">Upload</button>
@@ -459,8 +464,8 @@ $openMediaTab = $config['openMediaTab'];
       imageGrid.innerHTML = `
         <div class="category-hub">
           ${categories.map(cat => {
-            const coverImage = cat.posts[0]?.image_path ? `..${cat.posts[0].image_path}` : '';
-            return `
+        const coverImage = cat.posts[0]?.image_path ? `..${cat.posts[0].image_path}` : '';
+        return `
             <div class="category-card">
               <div class="category-card-bg" style="background-image: url('${coverImage}')"></div>
               <div class="category-card-content">
@@ -627,6 +632,21 @@ $openMediaTab = $config['openMediaTab'];
     }
 
     document.addEventListener('DOMContentLoaded', fetchAndLoadPosts);
+  </script>
+
+  <script>
+    // Register service worker for offline support (Google Workbox)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../sw.js')
+          .then(reg => {
+            console.log('[SW] Registered, scope:', reg.scope);
+          })
+          .catch(err => {
+            console.warn('[SW] Registration failed:', err);
+          });
+      });
+    }
   </script>
 
 </body>
