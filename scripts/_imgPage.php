@@ -269,6 +269,14 @@ $ImageFilePath = $_GET['filePath'];
 
     document.addEventListener('DOMContentLoaded', loadCategories);
   </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../../sw.js')
+          .catch(err => console.warn('[SW] Registration failed:', err));
+      });
+    }
+  </script>
   <style>
     .categorySection {
       margin-bottom: 15px;
