@@ -67,23 +67,62 @@ if (!file_exists(__DIR__ . '/yt-dlp.exe') && !shell_exec('where yt-dlp.exe 2>nul
   exit;
 }
 
+// Job ID for progress tracking (digits only)
+$jobId = preg_replace('/[^0-9]/', '', $_GET['jobId'] ?? '');
+if (!$jobId) {
+  $jobId = randStringGen(16, 'numbers');
+}
+$progressFile = __DIR__ . '/temp/progress_' . $jobId . '.txt';
+file_put_contents($progressFile, '');
+
 // Temp output file
 $tempId        = randStringGen(16, 'numbers');
 $tempVideoFile = __DIR__ . '/temp/videos/' . $tempId . '.' . $videoExtension;
 
-// Download video
-$dlCommand = escapeshellarg($ytdlpPath)
-  . ' --format ' . escapeshellarg('bestvideo[ext=' . $videoExtension . ']+bestaudio[ext=m4a]')
-  . ' --output ' . escapeshellarg($tempVideoFile)
-  . ' ' . escapeshellarg($url);
+// Build yt-dlp command (forward slashes, double-quoted for Windows)
+$ytdlpFwd  = str_replace('\\', '/', $ytdlpPath);
+$tempFwd   = str_replace('\\', '/', $tempVideoFile);
+$dlCommand = '"' . $ytdlpFwd . '"'
+  . ' --newline'
+  . ' --format "bestvideo[ext=' . $videoExtension . ']+bestaudio[ext=m4a]/bestvideo+bestaudio/best"'
+  . ' --merge-output-format ' . $videoExtension
+  . ' --output "' . $tempFwd . '"'
+  . ' "' . $url . '"';
 
-exec($dlCommand, $dlOutput, $dlReturn);
+// Run yt-dlp via proc_open so progress streams live to the progress file
+$descriptorspec = [
+  0 => ['pipe', 'r'],
+  1 => ['file', $progressFile, 'w'],
+  2 => ['file', $progressFile, 'a'],
+];
+$process = proc_open($dlCommand, $descriptorspec, $pipes);
+$dlReturn = -1;
+if (is_resource($process)) {
+  fclose($pipes[0]);
+  $dlReturn = proc_close($process);
+}
+
+// Check the file; yt-dlp may have remuxed to a different extension
+if (!file_exists($tempVideoFile)) {
+  // Try common remux fallback (e.g. mkv)
+  $fallbacks = ['mkv', 'webm', 'mp4'];
+  foreach ($fallbacks as $ext) {
+    $candidate = __DIR__ . '/temp/videos/' . $tempId . '.' . $ext;
+    if (file_exists($candidate)) {
+      $tempVideoFile  = $candidate;
+      $videoExtension = $ext;
+      break;
+    }
+  }
+}
 
 if (!file_exists($tempVideoFile)) {
+  if (file_exists($progressFile)) unlink($progressFile);
+  $logContent = file_exists($progressFile) ? file_get_contents($progressFile) : '';
   echo json_encode([
     'success' => false,
     'message' => 'Video download failed. Check yt-dlp and the URL.',
-    'detail'  => implode("\n", $dlOutput),
+    'detail'  => $logContent,
   ]);
   exit;
 }
@@ -165,8 +204,13 @@ if (file_exists($cacheFile)) {
   unlink($cacheFile);
 }
 
+// Clean up progress file
+if (file_exists($progressFile)) {
+  unlink($progressFile);
+}
+
 echo json_encode([
   'success'  => true,
-  'redirect' => '/?success=' . urlencode('New Video Posted'),
+  'redirect' => '?success=' . urlencode('New Video Posted'),
 ]);
 exit;

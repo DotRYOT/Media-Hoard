@@ -86,7 +86,11 @@ require_once './scripts/_inc.php';
       <form id="webVideoUpload">
         <input type="text" name="url" placeholder="YouTube URL" required>
         <button id="ytSubmitBtn" type="submit" style="display: flex;">Download</button>
-        <div id="ytDownloadStatus" style="display: none; font-size: 14px; color: #aaa; margin-top: 6px;"></div>
+        <div id="ytDownloadStatus"></div>
+        <div id="ytDownloadProgressWrap">
+          <progress id="ytDownloadProgressBar" value="0" max="100"></progress>
+          <span id="ytDownloadProgressPct">0%</span>
+        </div>
       </form>
       <div class="vLine"></div>
       <form action="./scripts/_uploader.php" id="localVideoUpload" method="post" enctype="multipart/form-data">
@@ -196,34 +200,62 @@ require_once './scripts/_inc.php';
         const url = $('input[name="url"]', this).val().trim();
         if (!url) return;
 
-        const $btn = $('#ytSubmitBtn');
+        // Generate a numeric job ID the backend will use for the progress file
+        const jobId = Date.now().toString() + Math.floor(Math.random() * 9000 + 1000).toString();
+
+        const $btn    = $('#ytSubmitBtn');
         const $status = $('#ytDownloadStatus');
+        const $wrap   = $('#ytDownloadProgressWrap');
+        const $bar    = $('#ytDownloadProgressBar');
+        const $pct    = $('#ytDownloadProgressPct');
+
+        function setProgress(p) {
+          p = Math.min(100, Math.max(0, Math.round(p)));
+          $bar.val(p);
+          $pct.text(p + '%');
+        }
 
         $btn.prop('disabled', true).text('Downloading...');
-        $status.text('Downloading video, please wait\u2026').show();
-        $('#spinner').show();
+        $status.text('Starting download\u2026').show();
+        $wrap.show();
+        setProgress(0);
+
+        // Poll for progress every second
+        const pollInterval = setInterval(function () {
+          $.getJSON('./scripts/_dlProgress.php', { id: jobId }, function (data) {
+            if (data && typeof data.percent === 'number' && data.percent > 0) {
+              setProgress(data.percent);
+              $status.text('Downloading\u2026 ' + Math.round(data.percent) + '%');
+            }
+          });
+        }, 1000);
 
         $.ajax({
           url: './scripts/_downloader.php',
           type: 'GET',
-          data: { url: url },
+          data: { url: url, jobId: jobId },
           dataType: 'json',
           timeout: 0,
           success: function (data) {
+            clearInterval(pollInterval);
             if (data && data.success && data.redirect) {
+              setProgress(100);
               $status.text('Done! Redirecting\u2026');
               window.location.href = data.redirect;
             } else {
               const msg = (data && data.message) ? data.message : 'Download failed.';
               $status.text('Error: ' + msg);
+              $wrap.hide();
               $('#spinner').hide();
               $btn.prop('disabled', false).text('Download');
             }
           },
           error: function (jqXHR) {
+            clearInterval(pollInterval);
             const response = jqXHR.responseJSON;
             const message = response && response.message ? response.message : 'Download failed. Please try again.';
             $status.text('Error: ' + message);
+            $wrap.hide();
             $('#spinner').hide();
             $btn.prop('disabled', false).text('Download');
           }
