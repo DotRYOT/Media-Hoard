@@ -83,10 +83,10 @@ require_once './scripts/_inc.php';
           <span class="gicon">close</span>
         </button>
       </div>
-      <form action="./scripts/_downloader.php" id="webVideoUpload" method="get">
+      <form id="webVideoUpload">
         <input type="text" name="url" placeholder="YouTube URL" required>
-        <button id="submitButton" type="submit" onclick="toggleSpinner()" style="display: flex;">Download</button>
-        <button id="loadingButton" type="button" name="loading" style="display: none;">Loading...</button>
+        <button id="ytSubmitBtn" type="submit" style="display: flex;">Download</button>
+        <div id="ytDownloadStatus" style="display: none; font-size: 14px; color: #aaa; margin-top: 6px;"></div>
       </form>
       <div class="vLine"></div>
       <form action="./scripts/_uploader.php" id="localVideoUpload" method="post" enctype="multipart/form-data">
@@ -187,6 +187,45 @@ require_once './scripts/_inc.php';
           complete: function () {
             $('#localVideoUpload button[type="submit"]').prop('disabled', false);
             setTimeout(resetVideoUploadProgress, 700);
+          }
+        });
+      });
+
+      $('#webVideoUpload').on('submit', function (e) {
+        e.preventDefault();
+        const url = $('input[name="url"]', this).val().trim();
+        if (!url) return;
+
+        const $btn = $('#ytSubmitBtn');
+        const $status = $('#ytDownloadStatus');
+
+        $btn.prop('disabled', true).text('Downloading...');
+        $status.text('Downloading video, please wait\u2026').show();
+        $('#spinner').show();
+
+        $.ajax({
+          url: './scripts/_downloader.php',
+          type: 'GET',
+          data: { url: url },
+          dataType: 'json',
+          timeout: 0,
+          success: function (data) {
+            if (data && data.success && data.redirect) {
+              $status.text('Done! Redirecting\u2026');
+              window.location.href = data.redirect;
+            } else {
+              const msg = (data && data.message) ? data.message : 'Download failed.';
+              $status.text('Error: ' + msg);
+              $('#spinner').hide();
+              $btn.prop('disabled', false).text('Download');
+            }
+          },
+          error: function (jqXHR) {
+            const response = jqXHR.responseJSON;
+            const message = response && response.message ? response.message : 'Download failed. Please try again.';
+            $status.text('Error: ' + message);
+            $('#spinner').hide();
+            $btn.prop('disabled', false).text('Download');
           }
         });
       });
@@ -587,10 +626,6 @@ require_once './scripts/_inc.php';
 
     function toggleSpinner() {
       const spinner = document.querySelector('#spinner');
-      const submitButton = document.querySelector('#submitButton');
-      const loadingButton = document.querySelector('#loadingButton');
-      submitButton.style.display = submitButton.style.display === 'none' ? 'flex' : 'none';
-      loadingButton.style.display = loadingButton.style.display === 'none' ? 'flex' : 'none';
       spinner.style.display = spinner.style.display === 'none' ? 'flex' : 'none';
     }
 
