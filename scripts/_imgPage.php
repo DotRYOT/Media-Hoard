@@ -146,6 +146,11 @@ $ImageFilePath = $_GET['filePath'];
       if (event.key === 'z' || event.key === 'Z') {
         toggleZoomState(null);
       }
+      if ((event.key === 'q' || event.key === 'Q') && event.ctrlKey) {
+        event.preventDefault();
+        toggleSettingsMenu();
+        return;
+      }
       if (event.key === 'Escape') {
         const settingsMenu = document.querySelector('.settingsMenu');
         if (settingsMenu.style.display === 'flex') {
