@@ -148,7 +148,12 @@ $ImageFilePath = $_GET['filePath'];
       }
       if ((event.key === 'q' || event.key === 'Q') && event.ctrlKey) {
         event.preventDefault();
+        const settingsMenu = document.querySelector('.settingsMenu');
+        const isHidden = settingsMenu.style.display !== 'flex';
         toggleSettingsMenu();
+        if (isHidden) {
+          setTimeout(() => document.getElementById('categoryInput').focus(), 0);
+        }
         return;
       }
       if (event.key === 'Escape') {
