@@ -58,6 +58,23 @@ if (!$video_id) {
   exit;
 }
 
+// Check for duplicate YouTube video before downloading
+$postsJsonPath = __DIR__ . '/../video/posts.json';
+$existingPosts = file_exists($postsJsonPath) ? json_decode(file_get_contents($postsJsonPath), true) : [];
+if (is_array($existingPosts)) {
+  foreach ($existingPosts as $existingPost) {
+    if (isset($existingPost['youtube_id']) && $existingPost['youtube_id'] === $video_id) {
+      echo json_encode([
+        'success'    => false,
+        'message'    => 'This YouTube video has already been uploaded (ID: ' . htmlspecialchars($video_id, ENT_QUOTES, 'UTF-8') . ').',
+        'duplicate'  => true,
+        'existingId' => $existingPost['PUID'],
+      ]);
+      exit;
+    }
+  }
+}
+
 // Tool paths — prefer executables in the scripts folder, fall back to system PATH
 $ytdlpPath  = file_exists(__DIR__ . '/yt-dlp.exe')  ? __DIR__ . '/yt-dlp.exe'  : 'yt-dlp.exe';
 $ffmpegPath = file_exists(__DIR__ . '/ffmpeg.exe')  ? __DIR__ . '/ffmpeg.exe' : 'ffmpeg.exe';
@@ -194,6 +211,7 @@ $posts[] = [
   'video_path'     => "/video/{$PUID}/{$newVideoName}",
   'thumbnail_path' => "/video/{$PUID}/{$frameFileName}",
   'title'          => $videoTitle,
+  'youtube_id'     => $video_id,
 ];
 
 file_put_contents($jsonFile, json_encode($posts, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));

@@ -72,14 +72,33 @@ if ($returnVar !== 0) {
 // Prepare JSON data
 $json_file = '../video/posts.json';
 $posts = file_exists($json_file) ? json_decode(file_get_contents($json_file), true) : [];
+if (!is_array($posts)) {
+  $posts = [];
+}
+
+// Check for duplicate using file hash (if provided)
+$fileHash = isset($_GET['hash']) ? preg_replace('/[^a-f0-9]/', '', strtolower($_GET['hash'])) : null;
+if ($fileHash) {
+  foreach ($posts as $post) {
+    if (isset($post['hash']) && $post['hash'] === $fileHash) {
+      $error = generateMessageUrl('This video has already been uploaded (duplicate file detected).', 'error');
+      header("Location: ../../$error");
+      exit;
+    }
+  }
+}
 
 $new_post = [
   'PUID' => $PUID,
   'Time' => $Time,
   'video_path' => "/video/{$PUID}/{$newVideoName}",
   'thumbnail_path' => "/video/{$PUID}/{$frameFileName}",
-  'title' => $videoTitle
+  'title' => $videoTitle,
 ];
+
+if ($fileHash) {
+  $new_post['hash'] = $fileHash;
+}
 
 $posts[] = $new_post;
 

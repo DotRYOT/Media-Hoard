@@ -97,6 +97,7 @@ $openMediaTab = $config['openMediaTab'];
       <button>Oldest</button>
       <button>Favorites</button>
       <button>Categories</button>
+      <button>Uncategorized</button>
     </div>
   </div>
   <div class="ImageGrid"></div>
@@ -561,6 +562,22 @@ $openMediaTab = $config['openMediaTab'];
       document.querySelector('.filterTab button:nth-child(5)').addEventListener('click', () => {
         activeCategory = '';
         renderCategoriesHub();
+      });
+
+      document.querySelector('.filterTab button:nth-child(6)').addEventListener('click', () => {
+        activeCategory = '';
+        isCategoryHubMode = false;
+        const uncategorized = allPosts.filter(post => {
+          const cats = getPostCategories(post).map(c => (c || '').trim()).filter(Boolean);
+          return cats.length === 0;
+        });
+        if (uncategorized.length === 0) {
+          clearGrid();
+          imageGrid.innerHTML = `<div class="noPosts">All images have categories assigned.</div>`;
+          setFeedStatus('No uncategorized images');
+          return;
+        }
+        renderPostsOptimized(sortByNewest(uncategorized));
       });
     }
 

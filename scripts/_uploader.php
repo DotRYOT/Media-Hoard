@@ -94,6 +94,9 @@ if ($videoExtension === 'mp4') {
 // Use original filename as title for download
 $safeTitle = urlencode(basename($fileName, pathinfo($fileName, PATHINFO_EXTENSION)));
 
+// Compute SHA1 hash of the uploaded file for duplicate detection
+$fileHash = hash_file('sha1', $outputFileName);
+
 // Redirect to the download page with the sanitized title
-$redirectLocation = './_downloadedVideo.php/?url=' . $randNumber . '.' . $videoExtension . '&title=' . $safeTitle;
+$redirectLocation = './_downloadedVideo.php/?url=' . $randNumber . '.' . $videoExtension . '&title=' . $safeTitle . '&hash=' . $fileHash;
 uploadSuccessResponse($redirectLocation, $isAjaxRequest);
