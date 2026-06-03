@@ -1,10 +1,10 @@
 // Media-Hoard Service Worker — native Cache API (no external dependencies)
 
-const CACHE_PAGES    = 'mh-pages-v1';
-const CACHE_IMAGES   = 'mh-images-v1';
-const CACHE_DATA     = 'mh-data-v1';
-const CACHE_ASSETS   = 'mh-assets-v1';
-const CACHE_EXTERNAL = 'mh-external-v1';
+const CACHE_PAGES    = 'mh-pages-v2';
+const CACHE_IMAGES   = 'mh-images-v2';
+const CACHE_DATA     = 'mh-data-v2';
+const CACHE_ASSETS   = 'mh-assets-v2';
+const CACHE_EXTERNAL = 'mh-external-v2';
 
 const ALL_CACHES = [CACHE_PAGES, CACHE_IMAGES, CACHE_DATA, CACHE_ASSETS, CACHE_EXTERNAL];
 

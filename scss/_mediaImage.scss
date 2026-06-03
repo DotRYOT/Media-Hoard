@@ -60,6 +60,8 @@
       display: block;
       object-fit: cover;
       transition: transform var(--transition-slow);
+      content-visibility: auto;
+      contain-intrinsic-size: 200px 200px;
     }
   }
 }
