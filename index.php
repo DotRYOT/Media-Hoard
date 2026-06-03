@@ -263,10 +263,16 @@ require_once './scripts/_inc.php';
       });
     });
 
+    const VIDEO_CHUNK_SIZE = 24;
     let allPosts = [];
+    let activePosts = [];
+    let renderedCount = 0;
+    let isRenderingChunk = false;
     let tagsMap = {};
     let activeTag = '';
     const tagsEndpoint = './scripts/utility/_videoTags.php';
+    let videoFeedObserver = null;
+    const videoLoadSentinelId = 'videoLoadSentinel';
 
     function normalizeTag(tag) {
       return String(tag || '').trim().toLowerCase();
@@ -487,7 +493,7 @@ require_once './scripts/_inc.php';
         ? `<div class="post-tags">${tags.map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`).join('')}</div>`
         : '';
       const thumbnailHtml = thumbnailPath
-        ? `<img src="${thumbnailPath}" alt="${escapeHtml(decodedTitle)} thumbnail" loading="lazy" class="post-thumbnail" data-title="${escapeHtml(decodedTitle)}">`
+        ? `<img src="${thumbnailPath}" alt="${escapeHtml(decodedTitle)} thumbnail" loading="lazy" decoding="async" class="post-thumbnail" data-title="${escapeHtml(decodedTitle)}">`
         : `<div class="post-thumbnail-fallback" aria-label="${escapeHtml(decodedTitle)} thumbnail unavailable">
              <span class="gicon" aria-hidden="true">movie</span>
              <span>Preview unavailable</span>
@@ -521,14 +527,99 @@ require_once './scripts/_inc.php';
       if (activeTag) {
         applyTagFilter(activeTag);
       } else {
-        renderPosts(sortByNewest(data));
+        renderPostsOptimized(sortByNewest(data));
+      }
+    }
+
+    function renderPostsOptimized(posts) {
+      const container = document.querySelector('.PostLoadedArea');
+      if (!container) return;
+      if (!Array.isArray(posts) || posts.length === 0) {
+        container.innerHTML = `<div class="noPosts">No posts available.</div>`;
+        return;
+      }
+      activePosts = posts;
+      renderedCount = 0;
+      isRenderingChunk = false;
+      container.innerHTML = '';
+      
+      // Create or reuse sentinel element for IntersectionObserver
+      let sentinel = document.getElementById(videoLoadSentinelId);
+      if (!sentinel) {
+        sentinel = document.createElement('div');
+        sentinel.id = videoLoadSentinelId;
+        sentinel.setAttribute('aria-hidden', 'true');
+        sentinel.style.cssText = 'height:1px;width:100%;';
+      }
+      
+      renderNextChunk();
+      
+      // Add sentinel after initial chunk
+      if (renderedCount < activePosts.length) {
+        container.appendChild(sentinel);
+        setupVideoFeedObserver(sentinel);
+      }
+    }
+
+    function setupVideoFeedObserver(sentinel) {
+      if (videoFeedObserver) {
+        videoFeedObserver.disconnect();
+      }
+      
+      if ('IntersectionObserver' in window) {
+        videoFeedObserver = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              renderNextChunk();
+            }
+          }
+        }, {
+          root: null,
+          rootMargin: '500px 0px',
+          threshold: 0
+        });
+        
+        videoFeedObserver.observe(sentinel);
+      }
+    }
+
+    function renderNextChunk() {
+      const container = document.querySelector('.PostLoadedArea');
+      if (!container || isRenderingChunk) return;
+      if (renderedCount >= activePosts.length) return;
+
+      isRenderingChunk = true;
+      const start = renderedCount;
+      const end = Math.min(renderedCount + VIDEO_CHUNK_SIZE, activePosts.length);
+      const fragment = document.createDocumentFragment();
+
+      for (let i = start; i < end; i++) {
+        const cardHtml = createPostCard(activePosts[i]);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cardHtml;
+        fragment.appendChild(tempDiv.firstElementChild);
+      }
+
+      container.appendChild(fragment);
+      attachThumbnailFallbacks(container);
+      renderedCount = end;
+      isRenderingChunk = false;
+
+      // Update or remove sentinel based on remaining items
+      const sentinel = document.getElementById(videoLoadSentinelId);
+      if (sentinel) {
+        if (renderedCount >= activePosts.length) {
+          sentinel.remove();
+          if (videoFeedObserver) {
+            videoFeedObserver.disconnect();
+            videoFeedObserver = null;
+          }
+        }
       }
     }
 
     function renderPosts(posts) {
-      const container = document.querySelector('.PostLoadedArea');
-      container.innerHTML = posts.map(post => createPostCard(post)).join('');
-      attachThumbnailFallbacks(container);
+      renderPostsOptimized(posts);
     }
 
     function sortByNewest(posts) {
@@ -552,19 +643,19 @@ require_once './scripts/_inc.php';
       document.querySelector('.filterTab button:nth-child(1)').addEventListener('click', () => {
         activeTag = '';
         setTagInUrl('');
-        renderPosts(sortByRandom(allPosts));
+        renderPostsOptimized(sortByRandom(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(2)').addEventListener('click', () => {
         activeTag = '';
         setTagInUrl('');
-        renderPosts(sortByNewest(allPosts));
+        renderPostsOptimized(sortByNewest(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(3)').addEventListener('click', () => {
         activeTag = '';
         setTagInUrl('');
-        renderPosts(sortByOldest(allPosts));
+        renderPostsOptimized(sortByOldest(allPosts));
       });
 
       document.querySelector('.filterTab button:nth-child(4)').addEventListener('click', async () => {
@@ -585,7 +676,7 @@ require_once './scripts/_inc.php';
             container.innerHTML = `<div class="noPosts">No favorite posts found.</div>`;
             return;
           }
-          renderPosts(sortByNewest(filtered));
+          renderPostsOptimized(sortByNewest(filtered));
         } catch (error) {
           console.error('Favorites fetch error:', error.message || error);
           container.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
@@ -630,7 +721,7 @@ require_once './scripts/_inc.php';
       if (!normalized) {
         activeTag = '';
         setTagInUrl('');
-        renderPosts(sortByNewest(allPosts));
+        renderPostsOptimized(sortByNewest(allPosts));
         return;
       }
 
@@ -647,7 +738,7 @@ require_once './scripts/_inc.php';
         return;
       }
 
-      renderPosts(sortByNewest(filtered));
+      renderPostsOptimized(sortByNewest(filtered));
     }
 
     function decodeHTMLEntities(text) {
