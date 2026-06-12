@@ -303,6 +303,15 @@
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--space-2);
   }
+
+  .pageFiltertab {
+    .filterTab {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+    }
+  }
 }
 
 @media (max-width: 600px) {

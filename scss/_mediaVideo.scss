@@ -164,3 +164,26 @@
 @mixin video-sidebar-cards {
   @include post-card;
 }
+
+@media (max-width: 700px) {
+  #videosPage {
+    padding-top: calc(var(--nav-height) + var(--space-4));
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .pageFiltertab {
+    .filterTab {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  #videosPage {
+    padding-top: calc(var(--nav-height) + var(--space-4));
+  }
+}

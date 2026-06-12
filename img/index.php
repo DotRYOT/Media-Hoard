@@ -16,7 +16,7 @@ $openMediaTab = $config['openMediaTab'];
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home - Images</title>
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
-  <link rel="stylesheet" href="../css/imagePage.min.css">
+  <link rel="stylesheet" href="../scss/css/imagePage.min.css">
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
