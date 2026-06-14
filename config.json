@@ -3,6 +3,6 @@
     "thumbWidth": "640",
     "thumbHeight": "360",
     "videoExtension": "mp4",
-    "openMediaTab": "false",
+    "openMediaTab": "true",
     "maxFiles": "100"
 }
