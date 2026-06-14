@@ -24,6 +24,8 @@ package-lock.json
 
 # Images
 img/imageFiles
+img/categories.json
+img/favoriteImages.json
 
 # Video
 video/*
