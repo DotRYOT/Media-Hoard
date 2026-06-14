@@ -2,8 +2,6 @@
 
 Media Hoard is a local-first PHP media library for downloading, uploading, organizing, and playing videos/images from your own server environment.
 
-## Features
-
 # Media Hoard
 
 Media Hoard is a local-first PHP media library for downloading, uploading, organizing, and playing videos/images from your own server environment.

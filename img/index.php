@@ -1,12 +1,16 @@
 <?php
-require_once '../version.php';
-if (!is_dir("./imageFiles") || !file_exists("./imageFiles/images.json") || !file_exists("./imageFiles/_img.php")) {
+require_once "../version.php";
+if (
+  !is_dir("./imageFiles") ||
+  !file_exists("./imageFiles/images.json") ||
+  !file_exists("./imageFiles/_img.php")
+) {
   header("Location: ../setup.php?update=true");
   exit();
 }
-require_once '../scripts/_inc.php';
-$config = json_decode(file_get_contents('../config.json'), true);
-$openMediaTab = $config['openMediaTab'];
+require_once "../scripts/_inc.php";
+$config = json_decode(file_get_contents("../config.json"), true);
+$openMediaTab = $config["openMediaTab"];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,15 +28,13 @@ $openMediaTab = $config['openMediaTab'];
 </head>
 
 <body id="imagesPage">
-  <?php
-  displayMessage();
-  ?>
+  <?php displayMessage(); ?>
   <div id="spinner" style="display: none;">
     <l-zoomies size="150" stroke="5" bg-opacity="0.1" speed="1.4" color="#ff4500"></l-zoomies>
   </div>
   <nav class="mediaTopNav imageTopNav">
     <div class="navLeft">
-      <h3>MediaHoard <span><?= $version; ?></span></h3>
+      <h3>MediaHoard <span><?= $version ?></span></h3>
     </div>
     <div class="navRight">
       <div class="videoPostForm mediaNavActions imageNavActions">
@@ -203,7 +205,9 @@ $openMediaTab = $config['openMediaTab'];
     function createPostCardElement(post, index) {
       const PUID = post.PUID;
       const imagePath = post.image_path;
-      const target = '<?= $config['openMediaTab'] ?>' === 'true' ? '_blank' : '_self';
+      const target = '<?= $config[
+        "openMediaTab"
+      ] ?>' === 'true' ? '_blank' : '_self';
 
       const card = document.createElement('div');
       card.className = 'image-card';
@@ -367,11 +371,60 @@ $openMediaTab = $config['openMediaTab'];
 
         .category-hub {
           display: flex;
-          flex-direction: row;
-          flex-wrap: wrap;
+          flex-direction: column;
           gap: 12px;
           padding: 20px;
           width: 100%;
+        }
+
+        .category-search-container {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+
+        .category-search-input {
+          flex: 1;
+          padding: 10px 15px;
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 8px;
+          background: rgba(0,0,0,0.3);
+          color: #fff;
+          font-size: 14px;
+          transition: all 0.2s ease;
+        }
+
+        .category-search-input:focus {
+          outline: none;
+          border-color: #ff4500;
+          background: rgba(0,0,0,0.5);
+        }
+
+        .category-search-input::placeholder {
+          color: rgba(255,255,255,0.5);
+        }
+
+        .category-clear-btn {
+          padding: 10px 15px;
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 8px;
+          background: rgba(255,255,255,0.1);
+          color: #fff;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 600;
+          font-size: 12px;
+        }
+
+        .category-clear-btn:hover {
+          background: rgba(255,255,255,0.2);
+        }
+
+        .category-cards-wrapper {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 12px;
         }
 
         .category-card {
@@ -439,10 +492,20 @@ $openMediaTab = $config['openMediaTab'];
           color: #000;
         }
 
+        .category-search-no-results {
+          text-align: center;
+          padding: 40px 20px;
+          color: rgba(255,255,255,0.6);
+        }
+
         @media (max-width: 560px) {
           .category-card {
             width: 100%;
             flex: 1 1 100%;
+          }
+
+          .category-search-container {
+            flex-direction: column;
           }
         }
       `;
@@ -464,23 +527,77 @@ $openMediaTab = $config['openMediaTab'];
 
       imageGrid.innerHTML = `
         <div class="category-hub">
-          ${categories.map(cat => {
-        const coverImage = cat.posts[0]?.image_path ? `..${cat.posts[0].image_path}` : '';
-        return `
-            <div class="category-card">
-              <div class="category-card-bg" style="background-image: url('${coverImage}')"></div>
-              <div class="category-card-content">
-                <div class="category-title">${cat.displayName}</div>
-                <div class="category-meta">${cat.count} image${cat.count === 1 ? '' : 's'}</div>
-                <div class="category-actions">
-                  <button type="button" class="category-view" data-category="${encodeURIComponent(cat.key)}">View</button>
+          <div class="category-search-container">
+            <input type="text" class="category-search-input" id="categorySearchInput" placeholder="Search categories...">
+            <button type="button" class="category-clear-btn" id="categoryClearBtn">Clear</button>
+          </div>
+          <div class="category-cards-wrapper" id="categoriesWrapper">
+            ${categories.map(cat => {
+          const coverImage = cat.posts[0]?.image_path ? `..${cat.posts[0].image_path}` : '';
+          return `
+              <div class="category-card" data-category-key="${encodeURIComponent(cat.key)}" data-category-name="${cat.displayName.toLowerCase()}">
+                <div class="category-card-bg" style="background-image: url('${coverImage}')"></div>
+                <div class="category-card-content">
+                  <div class="category-title">${cat.displayName}</div>
+                  <div class="category-meta">${cat.count} image${cat.count === 1 ? '' : 's'}</div>
+                  <div class="category-actions">
+                    <button type="button" class="category-view" data-category="${encodeURIComponent(cat.key)}">View</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          `}).join('')}
+            `}).join('')}
+          </div>
         </div>
       `;
       setFeedStatus(`${categories.length} categories`);
+
+      const searchInput = document.getElementById('categorySearchInput');
+      const clearBtn = document.getElementById('categoryClearBtn');
+      const wrapper = document.getElementById('categoriesWrapper');
+
+      function filterCategories() {
+        const query = searchInput.value.toLowerCase().trim();
+        const categoryCards = wrapper.querySelectorAll('.category-card');
+        let visibleCount = 0;
+
+        categoryCards.forEach(card => {
+          const categoryName = card.dataset.categoryName || '';
+          const matches = query === '' || categoryName.includes(query);
+
+          if (matches) {
+            card.style.display = 'flex';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        if (visibleCount === 0 && query !== '') {
+          if (!wrapper.querySelector('.no-results-message')) {
+            const noResults = document.createElement('div');
+            noResults.className = 'category-search-no-results no-results-message';
+            noResults.textContent = `No categories match "${query}"`;
+            wrapper.appendChild(noResults);
+          }
+        } else {
+          const existing = wrapper.querySelector('.no-results-message');
+          if (existing) existing.remove();
+        }
+      }
+
+      searchInput.addEventListener('input', filterCategories);
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          searchInput.value = '';
+          filterCategories();
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        filterCategories();
+        searchInput.focus();
+      });
 
       // Attach click handlers for category cards
       imageGrid.querySelectorAll('.category-view').forEach(btn => {
