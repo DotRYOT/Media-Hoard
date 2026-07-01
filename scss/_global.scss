@@ -53,7 +53,8 @@
   --overlay-bg: #000000cc;
 
   // Typography
-  --font-ui: "Inter", "Segoe UI Variable Text", system-ui, -apple-system, sans-serif;
+  --font-ui:
+    "Inter", "Segoe UI Variable Text", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -61,9 +62,9 @@
   --font-weight-bold: 700;
 
   // Spacing
-  --space-1: .25rem;
-  --space-2: .5rem;
-  --space-3: .75rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
@@ -116,7 +117,7 @@ body {
   font-family: var(--font-ui);
   font-weight: var(--font-weight-normal);
   line-height: 1.5;
-  letter-spacing: .01em;
+  letter-spacing: 0.01em;
   font-optical-sizing: auto;
   min-height: 100vh;
   overflow-x: hidden;
@@ -149,9 +150,11 @@ select {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: .625rem 1rem;
+  padding: 0.625rem 1rem;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 
   &::placeholder {
     color: var(--placeholder-color);
@@ -205,21 +208,21 @@ select {
 .warningAlert {
   position: fixed;
   top: 4rem;
-  right: .5rem;
+  right: 0.5rem;
   z-index: 999;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  font-size: .9rem;
+  font-size: 0.9rem;
   font-weight: var(--font-weight-medium);
   margin: var(--space-3);
   animation: slideDown 300ms ease;
 
   h2 {
     flex: 1;
-    font-size: .9rem;
+    font-size: 0.9rem;
     font-weight: var(--font-weight-medium);
   }
 
@@ -227,7 +230,7 @@ select {
   button {
     display: flex;
     align-items: center;
-    opacity: .7;
+    opacity: 0.7;
     transition: opacity var(--transition-fast);
 
     &:hover {
@@ -237,20 +240,20 @@ select {
 }
 
 .errorHeader {
-  background: rgba(248, 113, 113, .12);
-  border: 1px solid rgba(248, 113, 113, .25);
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.25);
   color: var(--error-color);
 }
 
 .successAlert {
-  background: rgba(52, 211, 153, .12);
-  border: 1px solid rgba(52, 211, 153, .25);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
   color: var(--success-color);
 }
 
 .warningAlert {
-  background: rgba(251, 191, 36, .12);
-  border: 1px solid rgba(251, 191, 36, .25);
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.25);
   color: var(--warning-color);
 }
 
@@ -267,7 +270,7 @@ select {
 
   h2 {
     flex: 1;
-    font-size: .95rem;
+    font-size: 0.95rem;
     font-weight: var(--font-weight-medium);
   }
 
@@ -309,14 +312,17 @@ select {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: .6rem 1.1rem;
-  font-size: .875rem;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.875rem;
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-md);
   border: 1px solid var(--button-border);
   background: var(--button-bg);
   color: var(--text-color);
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   white-space: nowrap;
 
   &:hover {
@@ -325,7 +331,7 @@ select {
   }
 
   &:active {
-    transform: scale(.97);
+    transform: scale(0.97);
   }
 
   .gicon {
@@ -349,13 +355,13 @@ select {
 }
 
 %btn-danger {
-  background: rgba(248, 113, 113, .15);
-  border-color: rgba(248, 113, 113, .3);
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.3);
   color: var(--error-color);
 
   &:hover {
-    background: rgba(248, 113, 113, .25);
-    border-color: rgba(248, 113, 113, .5);
+    background: rgba(248, 113, 113, 0.25);
+    border-color: rgba(248, 113, 113, 0.5);
   }
 }
 
@@ -376,7 +382,10 @@ select {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
+  transition:
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal);
 
   &:hover {
     border-color: var(--border-medium);
@@ -455,7 +464,7 @@ select {
 
       #loadingButton {
         @extend %btn-base;
-        opacity: .6;
+        opacity: 0.6;
         pointer-events: none;
       }
 
@@ -477,7 +486,7 @@ select {
         flex: 1 1 100%;
         min-height: 1.2rem;
         color: var(--text-muted);
-        font-size: .85rem;
+        font-size: 0.85rem;
         display: none;
       }
 
@@ -519,7 +528,7 @@ select {
 
         #ytDownloadProgressPct {
           flex: 0 0 auto;
-          font-size: .8rem;
+          font-size: 0.8rem;
           font-weight: var(--font-weight-semibold);
           color: var(--text-secondary);
           padding: 2px var(--space-3);
@@ -576,7 +585,7 @@ select {
         padding: 2px var(--space-3);
         border-radius: var(--radius-pill);
         background: var(--bg-surface);
-        font-size: .8rem;
+        font-size: 0.8rem;
         font-weight: var(--font-weight-semibold);
         color: var(--text-secondary);
       }
@@ -586,7 +595,7 @@ select {
         flex: 1 1 100%;
         min-height: 1.2rem;
         color: var(--text-muted);
-        font-size: .85rem;
+        font-size: 0.85rem;
       }
     }
   }
@@ -594,9 +603,27 @@ select {
 
 // ─── Filter Tab ──────────────────────────────────────────────
 .pageFiltertab {
+  position: fixed;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  z-index: 900;
+
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: row;
+  flex-direction: row;
+  -webkit-flex-wrap: nowrap;
+  flex-wrap: nowrap;
+  -webkit-justify-content: center;
   justify-content: center;
+  -webkit-align-content: stretch;
+  align-content: stretch;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+
   padding: var(--space-2) var(--space-3);
+
 
   .filterTab {
     display: flex;
@@ -607,8 +634,8 @@ select {
     border-radius: var(--radius-pill);
 
     button {
-      padding: .45rem .9rem;
-      font-size: .82rem;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.82rem;
       font-weight: var(--font-weight-medium);
       border-radius: var(--radius-pill);
       color: var(--text-secondary);
@@ -654,7 +681,7 @@ select {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
   background: var(--bg-elevated);

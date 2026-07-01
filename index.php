@@ -754,7 +754,7 @@ require_once './scripts/_inc.php';
 
     function togglePageFiltertab() {
       const pageFiltertab = document.querySelector('.pageFiltertab');
-      pageFiltertab.style.display = pageFiltertab.style.display === 'none' ? 'block' : 'none';
+      pageFiltertab.style.display = pageFiltertab.style.display === 'none' ? 'flex' : 'none';
     }
 
     function toggleUploadtab() {
