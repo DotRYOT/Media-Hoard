@@ -31,3 +31,5 @@ img/favoriteImages.json
 video/*
 
 scripts/yt-dlp.exe
+
+cache/video_count.cache

@@ -21,7 +21,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Video</title>
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
-  <link rel="stylesheet" href="../css/videoPage.min.css">
+  <link rel="stylesheet" href="../scss/css/videoPage.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
 </head>
 
