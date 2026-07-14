@@ -1,6 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.querySelector("video");
   const playButton = document.getElementById("play-pause");
+
+  // --- NEW: Skip buttons ---
+  const skipBackwardButton = document.getElementById("skip-backward");
+  const skipForwardButton = document.getElementById("skip-forward");
+
   const progressBar = document.querySelector(".progress-bar");
   const volumeButton = document.getElementById("volume");
   const fullscreenButton = document.getElementById("fullscreen");
@@ -8,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const volumeControl = document.querySelector(".volume-control");
   const volumeSlider = document.querySelector(".volume-slider input");
   const volumeControlContainer = document.querySelector(".volume-control");
+
   let previousVolume = parseFloat(localStorage.getItem("previousVolume")) || 1;
   let hideCursorTimeout;
   let hideControlsTimeout;
@@ -46,6 +52,21 @@ document.addEventListener("DOMContentLoaded", () => {
       video.pause();
       playButton.innerHTML = '<span class="gicon">play_arrow</span>';
     }
+  }
+
+  // --- NEW: Skip Backward / Forward 5s ---
+  if (skipBackwardButton) {
+    skipBackwardButton.addEventListener("click", () => {
+      video.currentTime = Math.max(0, video.currentTime - 5);
+      updateTimeDisplay();
+    });
+  }
+
+  if (skipForwardButton) {
+    skipForwardButton.addEventListener("click", () => {
+      video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
+      updateTimeDisplay();
+    });
   }
 
   // Progress bar
@@ -122,18 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const controls = wrapper.querySelector(".controls");
 
   function resetCursorAndControls() {
-    // Show cursor
     wrapper.classList.add("show-cursor");
-
-    // Show controls
     controls.style.opacity = "1";
     controls.style.transform = "translateY(0)";
 
-    // Clear timeouts
     clearTimeout(hideCursorTimeout);
     clearTimeout(hideControlsTimeout);
 
-    // Schedule hiding after inactivity
     hideCursorTimeout = setTimeout(() => {
       wrapper.classList.remove("show-cursor");
     }, 2000);
@@ -152,7 +168,6 @@ document.addEventListener("DOMContentLoaded", () => {
     clearTimeout(hideControlsTimeout);
   }
 
-  // Mouse move -> show cursor and controls
   wrapper.addEventListener("mousemove", () => {
     resetCursorAndControls();
   });
@@ -162,10 +177,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   wrapper.addEventListener("mouseleave", () => {
-    resetCursorAndControls(); // will trigger hide after timeout
+    resetCursorAndControls();
   });
 
-  // Keep controls visible while hovering over them
   controls.addEventListener("mouseenter", () => {
     clearTimeout(hideCursorTimeout);
     clearTimeout(hideControlsTimeout);
@@ -175,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
     resetCursorAndControls();
   });
 
-  // Hide controls when mouse leaves the browser window
   document.addEventListener("mouseleave", (e) => {
     if (
       !document.fullscreenElement ||
@@ -185,7 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Also hide on tab/window blur
   window.addEventListener("blur", () => {
     hideControlsAndCursor();
   });
@@ -195,7 +207,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function navigateToVideo(url) {
     if (!url) return;
-    if (document.fullscreenElement || document.body.classList.contains("fullscreen")) {
+    if (
+      document.fullscreenElement ||
+      document.body.classList.contains("fullscreen")
+    ) {
       sessionStorage.setItem(fullscreenIntentKey, "1");
     } else {
       sessionStorage.removeItem(fullscreenIntentKey);
@@ -225,14 +240,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resumeBtn.addEventListener("click", () => {
       const target = wrapper || document.documentElement;
-      const request = target.requestFullscreen || document.documentElement.requestFullscreen;
+      const request =
+        target.requestFullscreen || document.documentElement.requestFullscreen;
       if (typeof request !== "function") return;
 
       request
         .call(target)
         .then(() => {
           document.body.classList.add("fullscreen");
-          fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>';
+          fullscreenButton.innerHTML =
+            '<span class="gicon">fullscreen_exit</span>';
           sessionStorage.removeItem(fullscreenIntentKey);
           overlay.remove();
           fullscreenResumeOverlayEl = null;
@@ -264,18 +281,21 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const target = wrapper || document.documentElement;
-      const request = target.requestFullscreen || document.documentElement.requestFullscreen;
+      const request =
+        target.requestFullscreen || document.documentElement.requestFullscreen;
       if (typeof request === "function") {
         request
           .call(target)
           .then(() => {
             document.body.classList.add("fullscreen");
-            fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>';
+            fullscreenButton.innerHTML =
+              '<span class="gicon">fullscreen_exit</span>';
             sessionStorage.removeItem(fullscreenIntentKey);
           })
           .catch(() => {
             document.body.classList.remove("fullscreen");
-            fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>';
+            fullscreenButton.innerHTML =
+              '<span class="gicon">fullscreen</span>';
             showFullscreenResumePrompt();
           });
       } else {
@@ -309,15 +329,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.fullscreenElement) {
       elem.requestFullscreen().catch(console.error);
       document.body.classList.add("fullscreen");
-      fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>'; // Exit icon
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen_exit</span>';
     } else {
       document.exitFullscreen().catch(console.error);
       document.body.classList.remove("fullscreen");
-      fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>'; // Enter icon
+      fullscreenButton.innerHTML = '<span class="gicon">fullscreen</span>';
     }
   }
 
-  // Exit fullscreen with ESC key
+  // Keyboard shortcuts
   document.addEventListener("keydown", (e) => {
     const isTyping =
       e.target &&
@@ -325,9 +345,26 @@ document.addEventListener("DOMContentLoaded", () => {
         e.target.tagName === "TEXTAREA" ||
         e.target.isContentEditable);
 
-    if (!isTyping && e.key.toLowerCase() === "f") {
+    if (isTyping) return; // Ignore shortcuts if user is typing
+
+    if (e.key.toLowerCase() === "f") {
       e.preventDefault();
       toggleFullscreen();
+      return;
+    }
+
+    // --- NEW: Left/Right Arrow for skipping ---
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      video.currentTime = Math.max(0, video.currentTime - 5);
+      updateTimeDisplay();
+      return;
+    }
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
+      updateTimeDisplay();
       return;
     }
 
@@ -337,7 +374,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Optional: Listen for system fullscreen change events
   document.addEventListener("fullscreenchange", () => {
     if (!document.fullscreenElement) {
       document.body.classList.remove("fullscreen");
@@ -345,7 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Double click to toggle fullscreen
   wrapper.addEventListener("dblclick", () => {
     if (!document.fullscreenElement) {
       wrapper.requestFullscreen().catch(console.error);
@@ -358,7 +393,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Volume hover behavior
   volumeControlContainer.addEventListener("mouseenter", () => {
     volumeControl.classList.add("visible");
   });
@@ -377,10 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isNaN(duration)) return;
 
     const bufferBar = document.querySelector(".progress-bar .buffer-bar");
-    if (!bufferBar) {
-      console.error("Buffer bar element not found!");
-      return;
-    }
+    if (!bufferBar) return;
 
     bufferBar.innerHTML = "";
 
@@ -400,17 +431,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   video.addEventListener("loadedmetadata", updateBufferBar);
-  setInterval(updateBufferBar, 1000); // Update every second
+  setInterval(updateBufferBar, 1000);
 
-  // Autoplay when enough has buffered
   video.muted = true;
 
   video.addEventListener("canplaythrough", () => {
     if (!video.paused) return;
-    togglePlayPause(); // Uses same logic as user click
+    togglePlayPause();
   });
 
-  // Optional: Unmute after play starts
   video.addEventListener("play", () => {
     video.muted = false;
     clearAutoplayCountdown();
@@ -448,26 +477,22 @@ document.addEventListener("DOMContentLoaded", () => {
         gap: 10px;
         backdrop-filter: blur(4px);
       }
-
       .up-next-top {
         display: flex;
         justify-content: space-between;
         align-items: center;
         font-size: 14px;
       }
-
       .up-next-thumb {
         width: 100%;
         height: 140px;
         object-fit: cover;
         border-radius: 8px;
       }
-
       .up-next-count {
         font-size: 20px;
         font-weight: 700;
       }
-
       .up-next-progress {
         width: 100%;
         height: 4px;
@@ -475,19 +500,16 @@ document.addEventListener("DOMContentLoaded", () => {
         border-radius: 999px;
         overflow: hidden;
       }
-
       .up-next-progress > div {
         height: 100%;
         width: 0%;
         background: #fff;
         transition: width 1s linear;
       }
-
       .up-next-actions {
         display: flex;
         gap: 8px;
       }
-
       .up-next-actions button {
         border: none;
         border-radius: 999px;
@@ -495,12 +517,10 @@ document.addEventListener("DOMContentLoaded", () => {
         cursor: pointer;
         font-weight: 600;
       }
-
       .up-next-cancel {
         background: rgba(255, 255, 255, 0.2);
         color: #fff;
       }
-
       .up-next-play {
         background: #fff;
         color: #000;

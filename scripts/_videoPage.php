@@ -22,7 +22,8 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
   <title>Video</title>
   <link rel="shortcut icon" href="../favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="../scss/css/videoPage.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
 </head>
 
 <body id="videosPage">
@@ -52,6 +53,7 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
       <div class="controls">
         <button id="play-pause"><span class="gicon">play_arrow</span></button>
 
+
         <!-- Volume control group -->
         <div class="volume-control">
           <button id="volume"><span class="gicon">volume_up</span></button>
@@ -59,6 +61,16 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
             <input type="range" min="0" max="1" step="0.05" value="1">
           </div>
         </div>
+
+        <!-- NEW: Skip Backward 5s -->
+        <button id="skip-backward" title="Back 5s">
+          <span class="gicon">replay_5</span>
+        </button>
+
+        <!-- NEW: Skip Forward 5s -->
+        <button id="skip-forward" title="Forward 5s">
+          <span class="gicon">forward_5</span>
+        </button>
 
         <div class="progress-bar">
           <div class="buffer-bar"></div>
