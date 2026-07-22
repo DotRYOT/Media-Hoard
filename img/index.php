@@ -25,6 +25,7 @@ $openMediaTab = $config["openMediaTab"];
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
   <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../scripts/utility/gifPause.js"></script>
 </head>
 
 <body id="imagesPage">
