@@ -273,6 +273,9 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
 
         document.body.dataset.nextVideoUrl = nextVideoUrl;
         document.body.dataset.nextVideoThumbnail = nextVideoThumbnail;
+
+        document.body.dataset.nextVideoReady = "true";
+        document.dispatchEvent(new CustomEvent("nextvideo:ready"));
       }
       function createPostCard(post) {
         if (!post || !post.video_path || !post.title) return '';

@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- FIXED: Skip to next video ---
+  // --- Skip to next video (robust cross-script sync) ---
   if (skipVideoButton) {
     skipVideoButton.title = "Next video (Shift + N)";
 
@@ -76,22 +76,44 @@ document.addEventListener("DOMContentLoaded", () => {
       skipVideoButton.disabled = !hasNext;
       skipVideoButton.style.opacity = hasNext ? "1" : "0.35";
       skipVideoButton.style.cursor = hasNext ? "pointer" : "not-allowed";
+      skipVideoButton.style.pointerEvents = hasNext ? "auto" : "none";
     }
 
-    // Watch for when the inline script sets data-next-video-url
-    const skipObserver = new MutationObserver(syncSkipButton);
+    // 1. Fast path: custom event from inline script
+    document.addEventListener("nextvideo:ready", syncSkipButton);
+
+    // 2. Fallback: watch for attribute mutations
+    const skipObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.attributeName === "data-next-video-url") {
+          syncSkipButton();
+          break;
+        }
+      }
+    });
     skipObserver.observe(document.body, {
       attributes: true,
-      attributeFilter: ["data-next-video-url"],
+      attributeFilter: ["data-next-video-url", "data-next-video-ready"],
     });
 
-    // Initial sync (probably disabled until posts load)
-    syncSkipButton();
+    // 3. Safety net: poll for a few seconds in case both above miss it
+    let pollCount = 0;
+    const pollInterval = setInterval(() => {
+      pollCount++;
+      syncSkipButton();
+      if (document.body?.dataset?.nextVideoUrl || pollCount > 25) {
+        clearInterval(pollInterval);
+      }
+    }, 200);
 
+    // 4. Always read live dataset on click (never a stale closure value)
     skipVideoButton.addEventListener("click", () => {
       const nextUrl = document.body?.dataset?.nextVideoUrl;
       if (nextUrl) navigateToVideo(nextUrl);
     });
+
+    // Initial sync
+    syncSkipButton();
   }
 
   // Progress bar
@@ -392,7 +414,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // --- Shift+N to skip to next video ---
     if (e.key.toLowerCase() === "n" && e.shiftKey) {
       e.preventDefault();
       const nextUrl = document.body?.dataset?.nextVideoUrl;
