@@ -2,9 +2,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const video = document.querySelector("video");
   const playButton = document.getElementById("play-pause");
 
-  // --- NEW: Skip buttons ---
+  // --- Skip buttons ---
   const skipBackwardButton = document.getElementById("skip-backward");
   const skipForwardButton = document.getElementById("skip-forward");
+
+  // --- Skip to next video button ---
+  const skipVideoButton = document.getElementById("skip-video");
 
   const progressBar = document.querySelector(".progress-bar");
   const volumeButton = document.getElementById("volume");
@@ -54,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- NEW: Skip Backward / Forward 5s ---
+  // --- Skip Backward / Forward 5s ---
   if (skipBackwardButton) {
     skipBackwardButton.addEventListener("click", () => {
       video.currentTime = Math.max(0, video.currentTime - 5);
@@ -66,6 +69,26 @@ document.addEventListener("DOMContentLoaded", () => {
     skipForwardButton.addEventListener("click", () => {
       video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
       updateTimeDisplay();
+    });
+  }
+
+  // --- Skip to next video ---
+  function updateSkipVideoButton() {
+    if (!skipVideoButton) return;
+    const hasNext = !!document.body?.dataset?.nextVideoUrl;
+    skipVideoButton.style.display = hasNext ? "" : "none";
+    skipVideoButton.style.opacity = hasNext ? "1" : "0.3";
+    skipVideoButton.disabled = !hasNext;
+  }
+
+  if (skipVideoButton) {
+    skipVideoButton.innerHTML = '<span class="gicon">skip_next</span>';
+    skipVideoButton.title = "Next video (Shift + N)";
+    updateSkipVideoButton();
+
+    skipVideoButton.addEventListener("click", () => {
+      const nextUrl = document.body?.dataset?.nextVideoUrl;
+      if (nextUrl) navigateToVideo(nextUrl);
     });
   }
 
@@ -353,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // --- NEW: Left/Right Arrow for skipping ---
+    // --- Left/Right Arrow for skipping ---
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       video.currentTime = Math.max(0, video.currentTime - 5);
@@ -365,6 +388,14 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
       updateTimeDisplay();
+      return;
+    }
+
+    // --- Shift+N to skip to next video ---
+    if (e.key.toLowerCase() === "n" && e.shiftKey) {
+      e.preventDefault();
+      const nextUrl = document.body?.dataset?.nextVideoUrl;
+      if (nextUrl) navigateToVideo(nextUrl);
       return;
     }
 

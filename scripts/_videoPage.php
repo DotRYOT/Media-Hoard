@@ -62,14 +62,19 @@ $videoSrc = '..' . $videoPath . '?v=' . $videoCacheVersion;
           </div>
         </div>
 
-        <!-- NEW: Skip Backward 5s -->
+        <!-- Skip Backward 5s -->
         <button id="skip-backward" title="Back 5s">
           <span class="gicon">replay_5</span>
         </button>
 
-        <!-- NEW: Skip Forward 5s -->
+        <!-- Skip Forward 5s -->
         <button id="skip-forward" title="Forward 5s">
           <span class="gicon">forward_5</span>
+        </button>
+
+        <!-- Skip to Next Video -->
+        <button id="skip-video" type="button" aria-label="Next video">
+          <span class="gicon">skip_next</span>
         </button>
 
         <div class="progress-bar">
