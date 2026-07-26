@@ -1,14 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.querySelector("video");
   const playButton = document.getElementById("play-pause");
-
-  // --- Skip buttons ---
   const skipBackwardButton = document.getElementById("skip-backward");
   const skipForwardButton = document.getElementById("skip-forward");
-
-  // --- Skip to next video button ---
   const skipVideoButton = document.getElementById("skip-video");
-
   const progressBar = document.querySelector(".progress-bar");
   const volumeButton = document.getElementById("volume");
   const fullscreenButton = document.getElementById("fullscreen");
@@ -57,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- Skip Backward / Forward 5s ---
+  // Skip Backward / Forward 5s
   if (skipBackwardButton) {
     skipBackwardButton.addEventListener("click", () => {
       video.currentTime = Math.max(0, video.currentTime - 5);
@@ -72,19 +67,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Skip to next video ---
-  function updateSkipVideoButton() {
-    if (!skipVideoButton) return;
-    const hasNext = !!document.body?.dataset?.nextVideoUrl;
-    skipVideoButton.style.display = hasNext ? "" : "none";
-    skipVideoButton.style.opacity = hasNext ? "1" : "0.3";
-    skipVideoButton.disabled = !hasNext;
-  }
-
+  // --- FIXED: Skip to next video ---
   if (skipVideoButton) {
-    skipVideoButton.innerHTML = '<span class="gicon">skip_next</span>';
     skipVideoButton.title = "Next video (Shift + N)";
-    updateSkipVideoButton();
+
+    function syncSkipButton() {
+      const hasNext = !!document.body?.dataset?.nextVideoUrl;
+      skipVideoButton.disabled = !hasNext;
+      skipVideoButton.style.opacity = hasNext ? "1" : "0.35";
+      skipVideoButton.style.cursor = hasNext ? "pointer" : "not-allowed";
+    }
+
+    // Watch for when the inline script sets data-next-video-url
+    const skipObserver = new MutationObserver(syncSkipButton);
+    skipObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-next-video-url"],
+    });
+
+    // Initial sync (probably disabled until posts load)
+    syncSkipButton();
 
     skipVideoButton.addEventListener("click", () => {
       const nextUrl = document.body?.dataset?.nextVideoUrl;
@@ -368,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
         e.target.tagName === "TEXTAREA" ||
         e.target.isContentEditable);
 
-    if (isTyping) return; // Ignore shortcuts if user is typing
+    if (isTyping) return;
 
     if (e.key.toLowerCase() === "f") {
       e.preventDefault();
@@ -376,7 +378,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // --- Left/Right Arrow for skipping ---
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       video.currentTime = Math.max(0, video.currentTime - 5);
