@@ -75,6 +75,8 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    
 3. Set proper ownership and permissions for the web server user:
 
+   **Option A: Manual setup**
+   
    **For Apache (http user on Arch/CachyOS):**
    ```bash
    sudo chown -R http:http Media-Hoard
@@ -101,6 +103,22 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    sudo chown -R nginx:nginx Media-Hoard/img/imageFiles
    sudo chown -R nginx:nginx Media-Hoard/scripts/temp
    ```
+
+   **Option B: Automated setup script (Recommended)**
+   
+   Run the included setup script to automatically create all necessary directories and set correct permissions:
+   
+   ```bash
+   cd /var/www/html/Media-Hoard
+   sudo bash scripts/setup_permissions.sh
+   ```
+   
+   This script will:
+   - Create required directories (video/, img/imageFiles/, scripts/temp/videos/, cache/)
+   - Set proper ownership for your web server user (http or nginx)
+   - Set correct permissions (755 for directories, 644 for files)
+   - Create .gitkeep files to preserve empty directories in Git
+   - Work for both Apache and nginx configurations
 
 4. Enable PHP and required extensions:
 
@@ -135,6 +153,13 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
 If you encounter permission errors when uploading videos or images:
 
+**Quick fix using the setup script (Recommended):**
+```bash
+cd /var/www/html/Media-Hoard
+sudo bash scripts/setup_permissions.sh
+```
+
+**Manual troubleshooting:**
 ```bash
 # Check current permissions
 ls -la /var/www/html/Media-Hoard/
@@ -155,6 +180,36 @@ sudo chmod -R 755 /var/www/html/Media-Hoard/video
 sudo chown -R http:http /var/www/html/Media-Hoard/img/imageFiles
 sudo chmod -R 755 /var/www/html/Media-Hoard/img/imageFiles
 ```
+
+**Troubleshooting thumbnail generation issues on Arch/CachyOS:**
+
+If videos upload but thumbnails are not generated:
+
+```bash
+# Verify ffmpeg is installed and accessible
+which ffmpeg
+ffmpeg -version
+
+# Check if PHP can find ffmpeg (create test file)
+echo '<?php echo shell_exec("which ffmpeg"); ?>' | php
+
+# Test ffmpeg manually on an uploaded video
+cd /var/www/html/Media-Hoard/video/<PUID>/
+ffmpeg -ss 5 -i file_<PUID>.mp4 -vf "scale=640:360:force_original_aspect_ratio=1,pad=640:360:(ow-iw)/2:(oh-ih)/2" -vframes 1 test_thumb.jpg
+
+# Check error logs for ffmpeg errors
+sudo tail -f /var/log/httpd/error_log  # For Apache
+sudo tail -f /var/log/nginx/error.log  # For nginx
+
+# Ensure web server user can execute ffmpeg
+sudo -u http ffmpeg -version  # For Apache
+sudo -u nginx ffmpeg -version  # For nginx
+```
+
+Common issues:
+- **ffmpeg not in PATH for web server**: The script now searches multiple locations including `/usr/bin/ffmpeg` and uses explicit PATH when executing
+- **Permission to execute ffmpeg**: Ensure the web server user (http/nginx) has execute permissions
+- **Missing codecs**: Install full ffmpeg package: `sudo pacman -S ffmpeg`
 
 ## Enable PHP Zip (XAMPP on Windows)
 

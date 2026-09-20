@@ -74,6 +74,7 @@ $ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
 
 // Check for ffmpeg in multiple locations
 $ffmpegPath = null;
+$ffmpegFoundInPath = false;
 
 // First, check if ffmpeg exists in scripts folder
 if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
@@ -120,17 +121,32 @@ if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
         $testOutput = shell_exec(escapeshellarg($ffmpegExe) . ' -version 2>&1 | head -1');
         if ($testOutput && strpos($testOutput, 'ffmpeg version') !== false) {
           $ffmpegPath = $ffmpegExe; // Use command name directly, let exec() find it in PATH
+          $ffmpegFoundInPath = true;
         }
       }
     }
   }
 }
 
-if (!$ffmpegPath || !file_exists($ffmpegPath)) {
+if (!$ffmpegPath) {
   // Additional debug: log what we tried
   error_log("FFmpeg search failed. Tried: scripts folder, /usr/bin/ffmpeg, /usr/local/bin/ffmpeg, which command");
   error_log("PHP OS: " . PHP_OS . ", isWindows: " . ($isWindows ? 'true' : 'false'));
   die("ffmpeg not found. Please install it first. Location: /usr/bin/ffmpeg");
+}
+
+// If ffmpegPath is just the command name (not a full path), verify it works
+if (!file_exists($ffmpegPath)) {
+  // This means ffmpeg was found via PATH test, use it directly
+  $testOutput = shell_exec(escapeshellarg($ffmpegPath) . ' -version 2>&1 | head -1');
+  if (!$testOutput || strpos($testOutput, 'ffmpeg version') === false) {
+    error_log("FFmpeg verification failed. Command: $ffmpegPath");
+    die("ffmpeg found but not working properly.");
+  }
+  // ffmpeg is available via PATH, continue with just the command name
+  error_log("Using ffmpeg from PATH: $ffmpegPath");
+} else {
+  error_log("Using ffmpeg at: $ffmpegPath");
 }
 
 $filterString = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
@@ -144,9 +160,14 @@ if ($isWindows) {
   $thumbnailCommand .= '-vf "' . $filterString . '" ';
   $thumbnailCommand .= '-vframes 1 "' . $framePathFwd . '" 2>&1';
 } else {
-  // Linux/Unix: use absolute path for ffmpeg to avoid PATH issues
-  // Always use the full path we found earlier
-  $thumbnailCommand = escapeshellarg($ffmpegPath) . ' -ss ' . $frameTime . ' -i ' . escapeshellarg($uploadVideoPath) . ' ';
+  // Linux/Unix: build command based on how ffmpeg was found
+  if ($ffmpegFoundInPath) {
+    // ffmpeg found in PATH, use command name
+    $thumbnailCommand = escapeshellarg($ffmpegExe) . ' -ss ' . $frameTime . ' -i ' . escapeshellarg($uploadVideoPath) . ' ';
+  } else {
+    // ffmpeg found at absolute path, use full path
+    $thumbnailCommand = escapeshellarg($ffmpegPath) . ' -ss ' . $frameTime . ' -i ' . escapeshellarg($uploadVideoPath) . ' ';
+  }
   $thumbnailCommand .= '-vf ' . escapeshellarg($filterString) . ' ';
   $thumbnailCommand .= '-vframes 1 ' . escapeshellarg($frameFilePath) . ' 2>&1';
   

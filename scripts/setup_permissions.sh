@@ -23,29 +23,38 @@ BASE_DIR="$(dirname "$SCRIPT_DIR")"
 echo "Setting up permissions for: $BASE_DIR"
 
 # Create necessary directories
+# Note: GitHub may remove empty directories, so we recreate them here
 echo "Creating required directories..."
-mkdir -p "$BASE_DIR/scripts/temp/videos"
+mkdir -p "$SCRIPT_DIR/temp/videos"
 mkdir -p "$BASE_DIR/video"
 mkdir -p "$BASE_DIR/img/imageFiles"
 mkdir -p "$BASE_DIR/cache"
 
+# Create .gitkeep files to preserve directory structure in Git
+echo "Creating .gitkeep files to preserve directories in Git..."
+touch "$SCRIPT_DIR/temp/.gitkeep"
+touch "$SCRIPT_DIR/temp/videos/.gitkeep"
+touch "$BASE_DIR/video/.gitkeep"
+touch "$BASE_DIR/img/imageFiles/.gitkeep"
+touch "$BASE_DIR/cache/.gitkeep"
+
 # Set ownership
 echo "Setting ownership to $WEB_USER:$WEB_USER..."
-chown -R $WEB_USER:$WEB_USER "$BASE_DIR/scripts/temp"
+chown -R $WEB_USER:$WEB_USER "$SCRIPT_DIR/temp"
 chown -R $WEB_USER:$WEB_USER "$BASE_DIR/video"
 chown -R $WEB_USER:$WEB_USER "$BASE_DIR/img/imageFiles"
 chown -R $WEB_USER:$WEB_USER "$BASE_DIR/cache"
 
 # Set directory permissions (755 = rwxr-xr-x)
 echo "Setting directory permissions to 755..."
-find "$BASE_DIR/scripts/temp" -type d -exec chmod 755 {} \;
+find "$SCRIPT_DIR/temp" -type d -exec chmod 755 {} \;
 find "$BASE_DIR/video" -type d -exec chmod 755 {} \;
 find "$BASE_DIR/img/imageFiles" -type d -exec chmod 755 {} \;
 find "$BASE_DIR/cache" -type d -exec chmod 755 {} \;
 
 # Set file permissions (644 = rw-r--r--)
 echo "Setting file permissions to 644..."
-find "$BASE_DIR/scripts/temp" -type f -exec chmod 644 {} \;
+find "$SCRIPT_DIR/temp" -type f -exec chmod 644 {} \;
 find "$BASE_DIR/video" -type f -exec chmod 644 {} \;
 find "$BASE_DIR/img/imageFiles" -type f -exec chmod 644 {} \;
 find "$BASE_DIR/cache" -type f -exec chmod 644 {} \;
@@ -63,7 +72,7 @@ echo "Permission setup complete!"
 echo ""
 echo "Summary:"
 echo "  - Web server user: $WEB_USER"
-echo "  - Temp directory: $BASE_DIR/scripts/temp (owned by $WEB_USER)"
+echo "  - Temp directory: $SCRIPT_DIR/temp (owned by $WEB_USER)"
 echo "  - Video directory: $BASE_DIR/video (owned by $WEB_USER)"
 echo "  - Image directory: $BASE_DIR/img/imageFiles (owned by $WEB_USER)"
 echo "  - Cache directory: $BASE_DIR/cache (owned by $WEB_USER)"
