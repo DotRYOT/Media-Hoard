@@ -97,9 +97,50 @@ function regenerate_thumbnail($videoPath, $thumbPath)
     }
   }
 
-  $ffmpegBinary = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'ffmpeg.exe' : 'ffmpeg';
+  // Find ffmpeg binary in system PATH
+  $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+  $ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
+  $ffmpegPath = null;
+  
+  if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
+    $ffmpegPath = __DIR__ . '/' . $ffmpegExe;
+  } else {
+    if ($isWindows) {
+      $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
+      if ($whereOutput && trim($whereOutput) !== '') {
+        $paths = explode("\n", trim($whereOutput));
+        foreach ($paths as $path) {
+          $path = trim($path);
+          if (file_exists($path)) {
+            $ffmpegPath = $path;
+            break;
+          }
+        }
+      }
+    } else {
+      $whichOutput = shell_exec('which ' . $ffmpegExe . ' 2>/dev/null');
+      if ($whichOutput && trim($whichOutput) !== '') {
+        $ffmpegPath = trim($whichOutput);
+      }
+    }
+  }
+  
+  if (!$ffmpegPath || !file_exists($ffmpegPath)) {
+    error_log("ffmpeg not found");
+    return;
+  }
+  
   $filterString = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
-  $thumbCmd = $ffmpegBinary . ' -v error -nostats -y -ss ' . escapeshellarg((string) $frameTime) . ' -i ' . escapeshellarg($videoPath) . ' -vf ' . escapeshellarg($filterString) . ' -vframes 1 ' . escapeshellarg($thumbPath) . ' 2>&1';
+  
+  if ($isWindows) {
+    $videoPathFwd = str_replace('\\', '/', $videoPath);
+    $thumbPathFwd = str_replace('\\', '/', $thumbPath);
+    $ffmpegPathFwd = str_replace('\\', '/', $ffmpegPath);
+    $thumbCmd = '"' . $ffmpegPathFwd . '" -v error -nostats -y -ss ' . escapeshellarg((string) $frameTime) . ' -i "' . $videoPathFwd . '" -vf "' . $filterString . '" -vframes 1 "' . $thumbPathFwd . '" 2>&1';
+  } else {
+    $thumbCmd = escapeshellarg($ffmpegPath) . ' -v error -nostats -y -ss ' . escapeshellarg((string) $frameTime) . ' -i ' . escapeshellarg($videoPath) . ' -vf ' . escapeshellarg($filterString) . ' -vframes 1 ' . escapeshellarg($thumbPath) . ' 2>&1';
+  }
+  
   $thumbOutput = [];
   $thumbCode = 0;
   exec($thumbCmd, $thumbOutput, $thumbCode);
@@ -217,7 +258,39 @@ $backupPath = $videoFilePath . '.bak';
 $startArg = number_format($start, 3, '.', '');
 $endArg = number_format($end, 3, '.', '');
 
-$ffmpegBinary = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'ffmpeg.exe' : 'ffmpeg';
+// Find ffmpeg binary in system PATH
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+$ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
+$ffmpegPath = null;
+
+if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
+  $ffmpegPath = __DIR__ . '/' . $ffmpegExe;
+} else {
+  if ($isWindows) {
+    $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
+    if ($whereOutput && trim($whereOutput) !== '') {
+      $paths = explode("\n", trim($whereOutput));
+      foreach ($paths as $path) {
+        $path = trim($path);
+        if (file_exists($path)) {
+          $ffmpegPath = $path;
+          break;
+        }
+      }
+    }
+  } else {
+    $whichOutput = shell_exec('which ' . $ffmpegExe . ' 2>/dev/null');
+    if ($whichOutput && trim($whichOutput) !== '') {
+      $ffmpegPath = trim($whichOutput);
+    }
+  }
+}
+
+if (!$ffmpegPath || !file_exists($ffmpegPath)) {
+  echo json_encode(['success' => false, 'message' => 'ffmpeg not found']);
+  exit;
+}
+
 $hasAudio = has_audio_stream($videoFilePath);
 $isIntroCut = $start <= 0.001;
 $isOutroCut = ($duration !== false) ? ($end >= ($duration - 0.001)) : false;
@@ -235,7 +308,14 @@ if ($hasAudio) {
     $filterWithAudio = "[0:v]trim=0:{$startArg},setpts=PTS-STARTPTS[v0];[0:v]trim=start={$endArg},setpts=PTS-STARTPTS[v1];[0:a]atrim=0:{$startArg},asetpts=PTS-STARTPTS[a0];[0:a]atrim=start={$endArg},asetpts=PTS-STARTPTS[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]";
   }
 
-  $commandWithAudio = $ffmpegBinary . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterWithAudio) . ' -map "[v]" -map "[a]" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath);
+  if ($isWindows) {
+    $videoPathFwd = str_replace('\\', '/', $videoFilePath);
+    $tmpOutputPathFwd = str_replace('\\', '/', $tmpOutputPath);
+    $ffmpegPathFwd = str_replace('\\', '/', $ffmpegPath);
+    $commandWithAudio = '"' . $ffmpegPathFwd . '" -y -fflags +genpts -i "' . $videoPathFwd . '" -filter_complex "' . $filterWithAudio . '" -map "[v]" -map "[a]" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k -avoid_negative_ts make_zero -movflags +faststart "' . $tmpOutputPathFwd . '"';
+  } else {
+    $commandWithAudio = escapeshellarg($ffmpegPath) . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterWithAudio) . ' -map "[v]" -map "[a]" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath);
+  }
   run_ffmpeg_command($commandWithAudio, $code, $errorDetails);
 } else {
   if ($isIntroCut) {
@@ -246,7 +326,14 @@ if ($hasAudio) {
     $filterVideoOnly = "[0:v]trim=0:{$startArg},setpts=PTS-STARTPTS[v0];[0:v]trim=start={$endArg},setpts=PTS-STARTPTS[v1];[v0][v1]concat=n=2:v=1:a=0[v]";
   }
 
-  $commandVideoOnly = $ffmpegBinary . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterVideoOnly) . ' -map "[v]" -c:v libx264 -preset veryfast -crf 23 -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath);
+  if ($isWindows) {
+    $videoPathFwd = str_replace('\\', '/', $videoFilePath);
+    $tmpOutputPathFwd = str_replace('\\', '/', $tmpOutputPath);
+    $ffmpegPathFwd = str_replace('\\', '/', $ffmpegPath);
+    $commandVideoOnly = '"' . $ffmpegPathFwd . '" -y -fflags +genpts -i "' . $videoPathFwd . '" -filter_complex "' . $filterVideoOnly . '" -map "[v]" -c:v libx264 -preset veryfast -crf 23 -avoid_negative_ts make_zero -movflags +faststart "' . $tmpOutputPathFwd . '"';
+  } else {
+    $commandVideoOnly = escapeshellarg($ffmpegPath) . ' -y -fflags +genpts -i ' . escapeshellarg($videoFilePath) . ' -filter_complex ' . escapeshellarg($filterVideoOnly) . ' -map "[v]" -c:v libx264 -preset veryfast -crf 23 -avoid_negative_ts make_zero -movflags +faststart ' . escapeshellarg($tmpOutputPath);
+  }
   run_ffmpeg_command($commandVideoOnly, $code, $errorDetails);
 }
 

@@ -1,1 +1,52 @@
-Nothing should be ignored since the changes only include source files (.php) and no build artifacts, dependencies, or temp files.
+```
+# Environment
+.env
+.env.local
+*.env.*
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Editors
+.vscode/
+.idea/
+
+# PHP related
+*.php~
+
+# Cache and temporary directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.class
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.out
+
+# Build artifacts
+dist/
+build/
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+
+# Dependencies
+node_modules/
+vendor/
+*.lock
+
+# OS specific
+.DS_Store
+Thumbs.db
+```
