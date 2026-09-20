@@ -68,14 +68,20 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
    ```bash
    cd /var/www/html
+   ```
+   ```bash
    sudo git clone https://github.com/DotRYOT/Media-Hoard.git Media-Hoard
+   ```
+   ```bash
    sudo chown -R http:http Media-Hoard
+   ```
+   ```bash
    sudo chmod -R 755 Media-Hoard
    ```
 
    CachyOS uses the `http` Apache user. If Apache is configured with a different `User`, use that account instead.
 
-3. Enable PHP extensions if needed:
+4. Enable PHP extensions if needed:
 
    **Ubuntu/Debian:**
    ```bash
@@ -83,11 +89,11 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    sudo systemctl restart apache2
    ```
 
-4. Open in browser:
+5. Open in browser:
 
    - `http://localhost/Media-Hoard/`
 
-5. On first run, setup files are created automatically. The app will detect `yt-dlp` from your system PATH.
+6. On first run, setup files are created automatically. The app will detect `yt-dlp` from your system PATH.
 
 ## Enable PHP Zip (XAMPP on Windows)
 
