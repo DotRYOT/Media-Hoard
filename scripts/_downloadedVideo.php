@@ -177,11 +177,9 @@ if ($isWindows) {
 
 // Execute the command with explicit PATH environment variable
 if (!$isWindows) {
-  // Set up environment with proper PATH for Linux
-  $env = [
-    'PATH' => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
-  ];
-  exec($thumbnailCommand, $output, $returnVar, $env);
+  // Set up environment with proper PATH for Linux by prepending to command
+  $thumbnailCommand = 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ' . $thumbnailCommand;
+  exec($thumbnailCommand, $output, $returnVar);
 } else {
   exec($thumbnailCommand, $output, $returnVar);
 }
