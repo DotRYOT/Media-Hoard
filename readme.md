@@ -28,6 +28,8 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
 ## Installation (Git)
 
+### Windows
+
 1. Install Git: [Download Git](https://git-scm.com/downloads)
 2. Clone into your web root (`htdocs` for XAMPP):
 
@@ -47,6 +49,43 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    - `http://localhost/Media-Hoard/`
 
 5. On first run, setup files are created automatically and you can install/update `yt-dlp` from the app.
+
+### Linux (including CachyOS/Arch-based)
+
+1. Install required dependencies:
+
+   **CachyOS/Arch:**
+   ```bash
+   sudo pacman -S php apache nginx ffmpeg yt-dlp git
+   ```
+
+   **Ubuntu/Debian:**
+   ```bash
+   sudo apt install php libapache2-mod-php php-zip ffmpeg yt-dlp git
+   ```
+
+2. Clone into your web root:
+
+   ```bash
+   cd /var/www/html
+   sudo git clone https://github.com/DotRYOT/videoArchiver.git Media-Hoard
+   sudo chown -R www-data:www-data Media-Hoard
+   sudo chmod -R 755 Media-Hoard
+   ```
+
+3. Enable PHP extensions if needed:
+
+   **Ubuntu/Debian:**
+   ```bash
+   sudo phpenmod zip
+   sudo systemctl restart apache2
+   ```
+
+4. Open in browser:
+
+   - `http://localhost/Media-Hoard/`
+
+5. On first run, setup files are created automatically. The app will detect `yt-dlp` from your system PATH.
 
 ## Enable PHP Zip (XAMPP on Windows)
 

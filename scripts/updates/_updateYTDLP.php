@@ -1,13 +1,17 @@
 <?php
 require "../_inc.php";
 
-$downloadUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
+// Cross-platform yt-dlp binary name detection
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+$ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
+
+$downloadUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/{$ytdlpExe}";
 $releaseApiUrl = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
 
 $localDir = realpath(__DIR__ . '/..');
-$localFilePath = $localDir . '/yt-dlp.exe';
-$tempFilePath = $localDir . '/yt-dlp.exe.tmp';
-$backupFilePath = $localDir . '/yt-dlp.exe.bak';
+$localFilePath = $localDir . '/' . $ytdlpExe;
+$tempFilePath = $localDir . '/' . $ytdlpExe . '.tmp';
+$backupFilePath = $localDir . '/' . $ytdlpExe . '.bak';
 
 function redirectMessage($message, $type = 'success')
 {

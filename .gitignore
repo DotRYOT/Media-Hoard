@@ -1,14 +1,16 @@
-# Dependencies
-node_modules/
+```gitignore
+# Compiled and build artifacts
+*.pyc
+__pycache__/
 
-# Build artifacts
-css/*.min.css
-css/*.min.css.map
-scss/
+# Dependencies
+vendor/
+composer.lock
 
 # Logs and temp files
 *.log
 *.tmp
+*.swp
 
 # Environment
 .env
@@ -19,17 +21,16 @@ scss/
 .vscode/
 .idea/
 
-# Package manager
-package-lock.json
+# OS generated files
+.DS_Store
+Thumbs.db
 
-# Images
-img/imageFiles
-img/categories.json
-img/favoriteImages.json
+# Backup files
+*~
+*.bak
+*.orig
 
-# Video
-video/*
-
-scripts/yt-dlp.exe
-
-cache/video_count.cache
+# PHP specific
+*.php~
+.htaccess
+```
