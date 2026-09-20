@@ -73,10 +73,17 @@ if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
   if ($isWindows) {
     $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
     if ($whereOutput && trim($whereOutput) !== '') {
-      $ffmpegPath = trim(explode("\n", trim($whereOutput))[0]);
+      $paths = explode("\n", trim($whereOutput));
+      foreach ($paths as $path) {
+        $path = trim($path);
+        if (file_exists($path)) {
+          $ffmpegPath = $path;
+          break;
+        }
+      }
     }
   } else {
-    $whichOutput = shell_exec('which ' . escapeshellarg($ffmpegExe) . ' 2>/dev/null');
+    $whichOutput = shell_exec('which ' . $ffmpegExe . ' 2>/dev/null');
     if ($whichOutput && trim($whichOutput) !== '') {
       $ffmpegPath = trim($whichOutput);
     }
