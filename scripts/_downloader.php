@@ -139,12 +139,29 @@ $jobId = preg_replace('/[^0-9]/', '', $_GET['jobId'] ?? '');
 if (!$jobId) {
   $jobId = randStringGen(16, 'numbers');
 }
-$progressFile = __DIR__ . '/temp/progress_' . $jobId . '.txt';
+
+// Ensure temp directory exists with proper permissions
+$tempDir = __DIR__ . '/temp';
+$tempVideosDir = $tempDir . '/videos';
+if (!is_dir($tempDir)) {
+  mkdir($tempDir, 0755, true);
+  if (!$isWindows) {
+    chmod($tempDir, 0755);
+  }
+}
+if (!is_dir($tempVideosDir)) {
+  mkdir($tempVideosDir, 0755, true);
+  if (!$isWindows) {
+    chmod($tempVideosDir, 0755);
+  }
+}
+
+$progressFile = $tempDir . '/progress_' . $jobId . '.txt';
 file_put_contents($progressFile, '');
 
 // Temp output file
 $tempId        = randStringGen(16, 'numbers');
-$tempVideoFile = __DIR__ . '/temp/videos/' . $tempId . '.' . $videoExtension;
+$tempVideoFile = $tempVideosDir . '/' . $tempId . '.' . $videoExtension;
 
 // Build yt-dlp command (forward slashes, double-quoted for Windows)
 $ytdlpFwd  = str_replace('\\', '/', $ytdlpPath);
@@ -174,7 +191,7 @@ if (!file_exists($tempVideoFile)) {
   // Try common remux fallback (e.g. mkv)
   $fallbacks = ['mkv', 'webm', 'mp4'];
   foreach ($fallbacks as $ext) {
-    $candidate = __DIR__ . '/temp/videos/' . $tempId . '.' . $ext;
+    $candidate = $tempVideosDir . '/' . $tempId . '.' . $ext;
     if (file_exists($candidate)) {
       $tempVideoFile  = $candidate;
       $videoExtension = $ext;
@@ -213,8 +230,12 @@ $uploadPath    = "{$videoDir}/{$newVideoName}";
 $frameFileName = "frame_{$PUID}.jpg";
 $framePath     = "{$videoDir}/{$frameFileName}";
 
+// Ensure video directory exists with proper permissions
 if (!is_dir($videoDir)) {
-  mkdir($videoDir, 0777, true);
+  mkdir($videoDir, 0755, true);
+  if (!$isWindows) {
+    chmod($videoDir, 0755);
+  }
 }
 
 // Move temp video to final location
@@ -227,21 +248,25 @@ if (rename($tempVideoFile, $uploadPath)) {
 }
 
 if (!$moved) {
-  echo json_encode(['success' => false, 'message' => 'Failed to move the downloaded video file.']);
+  echo json_encode(['success' => false, 'message' => 'Failed to move the downloaded video file. Check permissions.']);
   exit;
+}
+
+// Set proper permissions on the video file (Linux/Unix)
+if (!$isWindows) {
+  chmod($uploadPath, 0644);
 }
 
 // Generate thumbnail with ffmpeg
 // Cross-platform command building
-$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 $filterString   = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
 
 if ($isWindows) {
   // Windows: use forward slashes and double quotes
   $uploadPathFwd  = str_replace('\\', '/', $uploadPath);
   $framePathFwd   = str_replace('\\', '/', $framePath);
-  $ffmpegExe      = str_replace('\\', '/', $ffmpegPath);
-  $thumbCommand   = '"' . $ffmpegExe . '"'
+  $ffmpegExePath      = str_replace('\\', '/', $ffmpegPath);
+  $thumbCommand   = '"' . $ffmpegExePath . '"'
     . ' -ss ' . (int)$frameTime
     . ' -i "' . $uploadPathFwd . '"'
     . ' -vf "' . $filterString . '"'
@@ -259,6 +284,11 @@ if ($isWindows) {
 exec($thumbCommand, $thumbOutput, $thumbReturn);
 if ($thumbReturn !== 0) {
   error_log('ffmpeg thumbnail failed: ' . implode("\n", $thumbOutput));
+}
+
+// Set proper permissions on thumbnail file (Linux/Unix)
+if (!$isWindows && file_exists($framePath)) {
+  chmod($framePath, 0644);
 }
 
 // Update posts.json

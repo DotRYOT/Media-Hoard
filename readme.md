@@ -56,12 +56,12 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
    **CachyOS/Arch:**
    ```bash
-   sudo pacman -S php apache nginx ffmpeg yt-dlp git
+   sudo pacman -S php apache ffmpeg yt-dlp git
    ```
-
-   **Ubuntu/Debian:**
+   
+   For nginx instead of Apache:
    ```bash
-   sudo apt install php libapache2-mod-php php-zip ffmpeg yt-dlp git
+   sudo pacman -S php-fpm nginx ffmpeg yt-dlp git
    ```
 
 2. Clone into your web root:
@@ -72,21 +72,57 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    ```bash
    sudo git clone https://github.com/DotRYOT/Media-Hoard.git Media-Hoard
    ```
+   
+3. Set proper ownership and permissions for the web server user:
+
+   **For Apache (http user on Arch/CachyOS):**
    ```bash
    sudo chown -R http:http Media-Hoard
+   sudo find Media-Hoard -type d -exec chmod 755 {} \;
+   sudo find Media-Hoard -type f -exec chmod 644 {} \;
    ```
+   
+   **For nginx (nginx user):**
    ```bash
-   sudo chmod -R 755 Media-Hoard
+   sudo chown -R nginx:nginx Media-Hoard
+   sudo find Media-Hoard -type d -exec chmod 755 {} \;
+   sudo find Media-Hoard -type f -exec chmod 644 {} \;
+   ```
+   
+   **Important directories that need write access:**
+   ```bash
+   # For Apache
+   sudo chown -R http:http Media-Hoard/video
+   sudo chown -R http:http Media-Hoard/img/imageFiles
+   sudo chown -R http:http Media-Hoard/scripts/temp
+   
+   # For nginx
+   sudo chown -R nginx:nginx Media-Hoard/video
+   sudo chown -R nginx:nginx Media-Hoard/img/imageFiles
+   sudo chown -R nginx:nginx Media-Hoard/scripts/temp
    ```
 
-   CachyOS uses the `http` Apache user. If Apache is configured with a different `User`, use that account instead.
+4. Enable PHP and required extensions:
 
-4. Enable PHP extensions if needed:
-
-   **Ubuntu/Debian:**
+   **Apache:**
    ```bash
-   sudo phpenmod zip
-   sudo systemctl restart apache2
+   sudo nano /etc/httpd/conf/httpd.conf
+   ```
+   Uncomment or add: `LoadModule php_module modules/libphp.so`
+   Add: `AddHandler php-script .php`
+   
+   **Enable PHP extensions in `/etc/php/php.ini`:**
+   Make sure these lines are uncommented:
+   ```
+   extension=curl
+   extension=zip
+   extension=fileinfo
+   ```
+   
+   **Restart Apache:**
+   ```bash
+   sudo systemctl enable httpd
+   sudo systemctl start httpd
    ```
 
 5. Open in browser:
@@ -94,6 +130,31 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    - `http://localhost/Media-Hoard/`
 
 6. On first run, setup files are created automatically. The app will detect `yt-dlp` from your system PATH.
+
+**Troubleshooting permission issues on Arch/CachyOS:**
+
+If you encounter permission errors when uploading videos or images:
+
+```bash
+# Check current permissions
+ls -la /var/www/html/Media-Hoard/
+
+# Fix ownership (Apache example)
+sudo chown -R http:http /var/www/html/Media-Hoard
+
+# Ensure temp directory exists and has correct permissions
+sudo mkdir -p /var/www/html/Media-Hoard/scripts/temp/videos
+sudo chown -R http:http /var/www/html/Media-Hoard/scripts/temp
+sudo chmod -R 755 /var/www/html/Media-Hoard/scripts/temp
+
+# Ensure video directory has correct permissions
+sudo chown -R http:http /var/www/html/Media-Hoard/video
+sudo chmod -R 755 /var/www/html/Media-Hoard/video
+
+# Ensure image directory has correct permissions  
+sudo chown -R http:http /var/www/html/Media-Hoard/img/imageFiles
+sudo chmod -R 755 /var/www/html/Media-Hoard/img/imageFiles
+```
 
 ## Enable PHP Zip (XAMPP on Windows)
 

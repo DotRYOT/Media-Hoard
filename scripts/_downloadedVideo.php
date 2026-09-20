@@ -38,13 +38,15 @@ $uploadVideoPath = __DIR__ . "/../video/{$PUID}/{$newVideoName}";
 $frameFileName = "frame_{$PUID}.jpg";
 $frameFilePath = __DIR__ . "/../video/{$PUID}/{$frameFileName}";
 
+// Ensure video directory exists with proper permissions
 if (!is_dir(dirname($uploadVideoPath))) {
-  mkdir(dirname($uploadVideoPath), 0755, true);
-}
-
-// Ensure proper permissions on Linux
-if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-  chmod(dirname($uploadVideoPath), 0755);
+  if (!mkdir(dirname($uploadVideoPath), 0755, true)) {
+    die("Failed to create video directory. Check permissions.");
+  }
+  // Set proper permissions on Linux/Unix systems
+  if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+    chmod(dirname($uploadVideoPath), 0755);
+  }
 }
 
 // Attempt to move the video file
@@ -57,7 +59,13 @@ if (rename($FilePath, $uploadVideoPath)) {
 }
 
 if (!$uploadSuccess) {
-  die("Error moving video file to $uploadVideoPath. Check permissions and paths.");
+  error_log("Failed to move video from $FilePath to $uploadVideoPath");
+  die("Error moving video file. Check permissions.");
+}
+
+// Set proper permissions on the video file (Linux/Unix)
+if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+  chmod($uploadVideoPath, 0644);
 }
 
 // Build the FFmpeg command with cross-platform support
@@ -118,6 +126,11 @@ if ($returnVar !== 0) {
   error_log("Thumbnail generation failed: " . implode("\n", $output));
 }
 
+// Set proper permissions on thumbnail file (Linux/Unix)
+if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && file_exists($frameFilePath)) {
+  chmod($frameFilePath, 0644);
+}
+
 // Prepare JSON data
 $json_file = '../video/posts.json';
 $posts = file_exists($json_file) ? json_decode(file_get_contents($json_file), true) : [];
@@ -154,7 +167,7 @@ $posts[] = $new_post;
 // Write to JSON file
 $json_data = json_encode($posts, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 if (file_put_contents($json_file, $json_data) === false) {
-  die("Failed to write to JSON file.");
+  die("Failed to write to JSON file. Check permissions.");
 }
 
 // Delete the cache file
