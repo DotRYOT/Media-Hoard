@@ -151,13 +151,17 @@ function shouldSkipPath($relativePath)
 
   $protectedFiles = [
     'config.json',
-    'scripts/yt-dlp.exe',
     'video/posts.json',
     'video/favoriteVideos.json',
     'video/tags.json',
     'img/favoriteImages.json',
     'img/categories.json'
   ];
+
+  // Cross-platform: protect yt-dlp binary (either .exe or no extension)
+  $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+  $ytdlpBinary = $isWindows ? 'scripts/yt-dlp.exe' : 'scripts/yt-dlp';
+  $protectedFiles[] = $ytdlpBinary;
 
   foreach ($protectedPrefixes as $prefix) {
     if (strpos($normalized, $prefix) === 0) {

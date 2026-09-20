@@ -261,15 +261,36 @@ function downloadFile($fileUrl, $destinationPath)
 }
 function getYtDlpVersion($outputJson = false)
 {
-  $YTDLP_PATH = __DIR__ . "/yt-dlp.exe";
+  // Cross-platform yt-dlp binary detection
+  $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+  $ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
+  
+  // Check for yt-dlp in scripts folder or system PATH
+  $YTDLP_PATH = null;
+  if (file_exists(__DIR__ . '/' . $ytdlpExe)) {
+    $YTDLP_PATH = __DIR__ . '/' . $ytdlpExe;
+  } else {
+    // Search in system PATH
+    if ($isWindows) {
+      $whereOutput = shell_exec('where ' . escapeshellarg($ytdlpExe) . ' 2>nul');
+      if ($whereOutput && trim($whereOutput) !== '') {
+        $YTDLP_PATH = trim(explode("\n", trim($whereOutput))[0]);
+      }
+    } else {
+      $whichOutput = shell_exec('which ' . escapeshellarg($ytdlpExe) . ' 2>/dev/null');
+      if ($whichOutput && trim($whichOutput) !== '') {
+        $YTDLP_PATH = trim($whichOutput);
+      }
+    }
+  }
 
   // Debug: Check if file exists
-  if (!file_exists($YTDLP_PATH)) {
+  if (!$YTDLP_PATH || !file_exists($YTDLP_PATH)) {
     $response = [
       'version' => 'File not found',
-      'binary_path' => $YTDLP_PATH,
+      'binary_path' => $YTDLP_PATH ?? 'not found',
       'success' => false,
-      'error' => 'yt-dlp.exe does not exist at the specified path'
+      'error' => 'yt-dlp does not exist at the specified path'
     ];
 
     if ($outputJson) {
@@ -281,8 +302,12 @@ function getYtDlpVersion($outputJson = false)
     return $response;
   }
 
-  // Run version command
-  exec("\"$YTDLP_PATH\" --version", $output, $return_var);
+  // Run version command with cross-platform escaping
+  if ($isWindows) {
+    exec("\"$YTDLP_PATH\" --version", $output, $return_var);
+  } else {
+    exec(escapeshellarg($YTDLP_PATH) . ' --version', $output, $return_var);
+  }
 
   // Build response
   $response = [

@@ -75,12 +75,55 @@ if (is_array($existingPosts)) {
   }
 }
 
-// Tool paths — prefer executables in the scripts folder, fall back to system PATH
-$ytdlpPath  = file_exists(__DIR__ . '/yt-dlp.exe')  ? __DIR__ . '/yt-dlp.exe'  : 'yt-dlp.exe';
-$ffmpegPath = file_exists(__DIR__ . '/ffmpeg.exe')  ? __DIR__ . '/ffmpeg.exe' : 'ffmpeg.exe';
+// Cross-platform tool path detection
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+$ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
+$ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
 
-if (!file_exists(__DIR__ . '/yt-dlp.exe') && !shell_exec('where yt-dlp.exe 2>nul')) {
-  echo json_encode(['success' => false, 'message' => 'yt-dlp.exe not found. Please install it first.']);
+// Check for yt-dlp in scripts folder or system PATH
+$ytdlpPath = null;
+if (file_exists(__DIR__ . '/' . $ytdlpExe)) {
+  $ytdlpPath = __DIR__ . '/' . $ytdlpExe;
+} else {
+  // Search in system PATH
+  if ($isWindows) {
+    $whereOutput = shell_exec('where ' . escapeshellarg($ytdlpExe) . ' 2>nul');
+    if ($whereOutput && trim($whereOutput) !== '') {
+      $ytdlpPath = trim(explode("\n", trim($whereOutput))[0]);
+    }
+  } else {
+    $whichOutput = shell_exec('which ' . escapeshellarg($ytdlpExe) . ' 2>/dev/null');
+    if ($whichOutput && trim($whichOutput) !== '') {
+      $ytdlpPath = trim($whichOutput);
+    }
+  }
+}
+
+if (!$ytdlpPath || !file_exists($ytdlpPath)) {
+  echo json_encode(['success' => false, 'message' => 'yt-dlp not found. Please install it first.']);
+  exit;
+}
+
+$ffmpegPath = null;
+if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
+  $ffmpegPath = __DIR__ . '/' . $ffmpegExe;
+} else {
+  // Search in system PATH
+  if ($isWindows) {
+    $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
+    if ($whereOutput && trim($whereOutput) !== '') {
+      $ffmpegPath = trim(explode("\n", trim($whereOutput))[0]);
+    }
+  } else {
+    $whichOutput = shell_exec('which ' . escapeshellarg($ffmpegExe) . ' 2>/dev/null');
+    if ($whichOutput && trim($whichOutput) !== '') {
+      $ffmpegPath = trim($whichOutput);
+    }
+  }
+}
+
+if (!$ffmpegPath || !file_exists($ffmpegPath)) {
+  echo json_encode(['success' => false, 'message' => 'ffmpeg not found. Please install it first.']);
   exit;
 }
 
@@ -182,17 +225,30 @@ if (!$moved) {
 }
 
 // Generate thumbnail with ffmpeg
-// Use forward-slash paths; wrap in double quotes for Windows cmd compatibility
+// Cross-platform command building
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 $filterString   = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
-$uploadPathFwd  = str_replace('\\', '/', $uploadPath);
-$framePathFwd   = str_replace('\\', '/', $framePath);
-$ffmpegExe      = str_replace('\\', '/', $ffmpegPath);
-$thumbCommand   = '"' . $ffmpegExe . '"'
-  . ' -ss ' . (int)$frameTime
-  . ' -i "' . $uploadPathFwd . '"'
-  . ' -vf "' . $filterString . '"'
-  . ' -vframes 1 "' . $framePathFwd . '"'
-  . ' -y 2>&1';
+
+if ($isWindows) {
+  // Windows: use forward slashes and double quotes
+  $uploadPathFwd  = str_replace('\\', '/', $uploadPath);
+  $framePathFwd   = str_replace('\\', '/', $framePath);
+  $ffmpegExe      = str_replace('\\', '/', $ffmpegPath);
+  $thumbCommand   = '"' . $ffmpegExe . '"'
+    . ' -ss ' . (int)$frameTime
+    . ' -i "' . $uploadPathFwd . '"'
+    . ' -vf "' . $filterString . '"'
+    . ' -vframes 1 "' . $framePathFwd . '"'
+    . ' -y 2>&1';
+} else {
+  // Linux/Unix: use escapeshellarg for proper argument escaping
+  $thumbCommand = escapeshellarg($ffmpegPath)
+    . ' -ss ' . (int)$frameTime
+    . ' -i ' . escapeshellarg($uploadPath)
+    . ' -vf ' . escapeshellarg($filterString)
+    . ' -vframes 1 ' . escapeshellarg($framePath)
+    . ' -y 2>&1';
+}
 exec($thumbCommand, $thumbOutput, $thumbReturn);
 if ($thumbReturn !== 0) {
   error_log('ffmpeg thumbnail failed: ' . implode("\n", $thumbOutput));

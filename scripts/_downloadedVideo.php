@@ -29,17 +29,22 @@ $videoTitle = preg_replace(
   $_GET['title']
 );
 
-// Define paths
+// Define paths (use absolute paths for ffmpeg compatibility)
 $FileUrl = $_GET['url'];
-$FilePath = "./temp/videos/" . $FileUrl;
+$FilePath = __DIR__ . "/temp/videos/" . $FileUrl;
 $newVideoName = "file_{$PUID}.{$videoExtension}";
-$uploadVideoPath = "../video/{$PUID}/{$newVideoName}";
+$uploadVideoPath = __DIR__ . "/../video/{$PUID}/{$newVideoName}";
 
 $frameFileName = "frame_{$PUID}.jpg";
-$frameFilePath = "../video/{$PUID}/{$frameFileName}";
+$frameFilePath = __DIR__ . "/../video/{$PUID}/{$frameFileName}";
 
-if (!is_dir("../video/{$PUID}/")) {
-  mkdir("../video/{$PUID}/", 0777, true);
+if (!is_dir(dirname($uploadVideoPath))) {
+  mkdir(dirname($uploadVideoPath), 0755, true);
+}
+
+// Ensure proper permissions on Linux
+if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+  chmod(dirname($uploadVideoPath), 0755);
 }
 
 // Attempt to move the video file
@@ -55,12 +60,49 @@ if (!$uploadSuccess) {
   die("Error moving video file to $uploadVideoPath. Check permissions and paths.");
 }
 
-// Build the FFmpeg command
-$ffmpegPath = "ffmpeg.exe";
+// Build the FFmpeg command with cross-platform support
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+$ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
+
+// Check for ffmpeg in scripts folder or system PATH
+$ffmpegPath = null;
+if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
+  $ffmpegPath = __DIR__ . '/' . $ffmpegExe;
+} else {
+  // Search in system PATH
+  if ($isWindows) {
+    $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
+    if ($whereOutput && trim($whereOutput) !== '') {
+      $ffmpegPath = trim(explode("\n", trim($whereOutput))[0]);
+    }
+  } else {
+    $whichOutput = shell_exec('which ' . escapeshellarg($ffmpegExe) . ' 2>/dev/null');
+    if ($whichOutput && trim($whichOutput) !== '') {
+      $ffmpegPath = trim($whichOutput);
+    }
+  }
+}
+
+if (!$ffmpegPath || !file_exists($ffmpegPath)) {
+  die("ffmpeg not found. Please install it first.");
+}
+
 $filterString = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
-$thumbnailCommand = "{$ffmpegPath} -ss {$frameTime} -i " . escapeshellarg($uploadVideoPath) . " ";
-$thumbnailCommand .= "-vf " . escapeshellarg($filterString) . " ";
-$thumbnailCommand .= "-vframes 1 " . escapeshellarg($frameFilePath) . " 2>&1";
+
+if ($isWindows) {
+  // Windows: use forward slashes and double quotes
+  $uploadPathFwd = str_replace('\\', '/', $uploadVideoPath);
+  $framePathFwd = str_replace('\\', '/', $frameFilePath);
+  $ffmpegExePath = str_replace('\\', '/', $ffmpegPath);
+  $thumbnailCommand = '"' . $ffmpegExePath . '" -ss ' . $frameTime . ' -i "' . $uploadPathFwd . '" ';
+  $thumbnailCommand .= '-vf "' . $filterString . '" ';
+  $thumbnailCommand .= '-vframes 1 "' . $framePathFwd . '" 2>&1';
+} else {
+  // Linux/Unix: use escapeshellarg for proper argument escaping
+  $thumbnailCommand = escapeshellarg($ffmpegPath) . ' -ss ' . $frameTime . ' -i ' . escapeshellarg($uploadVideoPath) . ' ';
+  $thumbnailCommand .= '-vf ' . escapeshellarg($filterString) . ' ';
+  $thumbnailCommand .= '-vframes 1 ' . escapeshellarg($frameFilePath) . ' 2>&1';
+}
 
 // Execute the command
 exec($thumbnailCommand, $output, $returnVar);
