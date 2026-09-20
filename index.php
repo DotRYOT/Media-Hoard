@@ -11,830 +11,829 @@ require_once './scripts/_inc.php';
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home - Videos</title>
-  <link rel="shortcut icon" href="./favicon.png" type="image/x-icon">
-  <link rel="stylesheet" href="./css/index.min.css">
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
-  <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home - Videos</title>
+<link rel="shortcut icon" href="./favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="./css/index.min.css">
+<link rel="stylesheet"
+href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0">
+<script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/zoomies.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 
 <body id="videosPage">
-  <?php
-  displayMessage();
+<?php
+displayMessage();
 
-  // Check to see if the user wants to download yt-dlp automatically
-  // Cross-platform check: look in scripts folder OR system PATH
-  $ytDlpFound = false;
-  $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-  $ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
-  
-  // Check in scripts folder
-  if (file_exists("./scripts/" . $ytdlpExe)) {
+// Check to see if the user wants to download yt-dlp automatically
+// Cross-platform check: look in scripts folder OR system PATH
+$ytDlpFound = false;
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+$ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
+
+// Check in scripts folder
+if (file_exists("./scripts/" . $ytdlpExe)) {
+  $ytDlpFound = true;
+} else {
+  // Check in system PATH (More robust than 'which' for PHP shell_exec)
+  // We try running the command with --version. If it returns output, it's installed.
+  $versionOutput = shell_exec(escapeshellarg($ytdlpExe) . ' --version 2>/dev/null');
+  if ($versionOutput && trim($versionOutput) !== '') {
     $ytDlpFound = true;
   } else {
-    // Check in system PATH
-    if ($isWindows) {
-      $whereOutput = shell_exec('where ' . escapeshellarg($ytdlpExe) . ' 2>nul');
-      if ($whereOutput && trim($whereOutput) !== '') {
-        $ytDlpFound = true;
-      }
-    } else {
-      $whichOutput = shell_exec('which ' . escapeshellarg($ytdlpExe) . ' 2>/dev/null');
-      if ($whichOutput && trim($whichOutput) !== '') {
-        $ytDlpFound = true;
-      }
+    // Fallback: explicit Arch/CachyOS path check
+    if (file_exists('/usr/bin/' . $ytdlpExe)) {
+      $ytDlpFound = true;
     }
   }
+}
+
+if (!$ytDlpFound) {
+  // Detect OS for specific install instructions
+  $isArch = file_exists('/etc/arch-release');
+  $isDebian = file_exists('/etc/debian_version');
+  $isFedora = file_exists('/etc/fedora-release');
+  $osName = 'Linux';
+  $installCmd = '';
   
-  if (!$ytDlpFound) {
-    // Detect OS for specific install instructions
-    $isArch = file_exists('/etc/arch-release');
-    $isDebian = file_exists('/etc/debian_version');
-    $isFedora = file_exists('/etc/fedora-release');
-    $osName = 'Linux';
-    $installCmd = '';
-    
-    if ($isArch) {
-      $osName = 'Arch/CachyOS';
-      $installCmd = 'sudo pacman -S yt-dlp';
-    } elseif ($isDebian) {
-      $osName = 'Debian/Ubuntu';
-      $installCmd = 'sudo apt install yt-dlp';
-    } elseif ($isFedora) {
-      $osName = 'Fedora';
-      $installCmd = 'sudo dnf install yt-dlp';
-    } else {
-      $installCmd = 'sudo package-manager install yt-dlp';
-    }
-    ?>
-    <div class="updateAlert">
-      <span class="gicon" title="Update a program">help</span>
-      <h2>yt-dlp is required to download videos from YouTube</h2>
-      <p style="margin: 10px 0; color: #ccc;">Please install yt-dlp using your terminal:</p>
-      <code style="display: block; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace;"><?= htmlspecialchars($installCmd) ?></code>
-      <p style="font-size: 13px; color: #999;">Detected OS: <?= htmlspecialchars($osName) ?></p>
-      <div class="answer" style="margin-top: 15px;">
-        <a href="./" style="background: #4CAF50;">
-          <span class="gicon">refresh</span>
-          <span>I've installed it - Refresh</span>
-        </a>
-      </div>
-    </div>
-    <?php
+  if ($isArch) {
+    $osName = 'Arch/CachyOS';
+    $installCmd = 'sudo pacman -S yt-dlp';
+  } elseif ($isDebian) {
+    $osName = 'Debian/Ubuntu';
+    $installCmd = 'sudo apt install yt-dlp';
+  } elseif ($isFedora) {
+    $osName = 'Fedora';
+    $installCmd = 'sudo dnf install yt-dlp';
+  } else {
+    $installCmd = 'sudo package-manager install yt-dlp';
   }
   ?>
-  <div id="spinner" style="display: none;">
-    <l-zoomies size="150" stroke="5" bg-opacity="0.1" speed="1.4" color="#ff4500"></l-zoomies>
+  <div class="updateAlert">
+  <span class="gicon" title="Update a program">help</span>
+  <h2>yt-dlp is required to download videos from YouTube</h2>
+  <p style="margin: 10px 0; color: #ccc;">Please install yt-dlp using your terminal:</p>
+  <code style="display: block; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace;"><?= htmlspecialchars($installCmd) ?></code>
+  <p style="font-size: 13px; color: #999;">Detected OS: <?= htmlspecialchars($osName) ?></p>
+  <div class="answer" style="margin-top: 15px;">
+  <a href="./" style="background: #4CAF50;">
+  <span class="gicon">refresh</span>
+  <span>I've installed it - Refresh</span>
+  </a>
   </div>
-  <nav class="mediaTopNav">
-    <div class="navLeft">
-      <h3>MediaHoard <span><?= $version; ?></span></h3>
-    </div>
-    <div class="navRight">
-      <div class="videoPostForm mediaNavActions">
-        <h3>Videos</h3>
-        <button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction"
-          aria-label="Upload videos">
-          <span class="gicon">upload</span>
-          <p>Upload</p>
-        </button>
-        <button type="button" name="imagesPage" onclick="window.location.href='./img/'" class="navAction"
-          aria-label="Go to images">
-          <span class="gicon">image</span>
-          <p>Images</p>
-        </button>
-        <button type="button" onclick="togglePageFiltertab()" class="navAction" aria-label="Open filters">
-          <span class="gicon">filter_alt</span>
-          <p>Filter</p>
-        </button>
-        <button type="button" onclick="window.location.href='./settings/'" class="navAction" aria-label="Open settings">
-          <span class="gicon">settings</span>
-          <p>Settings</p>
-        </button>
-      </div>
-    </div>
-  </nav>
-  <div class="uploadMenu" id="uploadMenu" style="display: none;">
-    <div class="uploadContainer">
-      <div class="topUploadTitle">
-        <h3>Choose an option</h3>
-        <button type="button" onclick="toggleUploadtab()">
-          <span class="gicon">close</span>
-        </button>
-      </div>
-      <form id="webVideoUpload">
-        <input type="text" name="url" placeholder="YouTube URL" required>
-        <button id="ytSubmitBtn" type="submit" style="display: flex;">Download</button>
-        <div id="ytDownloadStatus"></div>
-        <div id="ytDownloadProgressWrap">
-          <progress id="ytDownloadProgressBar" value="0" max="100"></progress>
-          <span id="ytDownloadProgressPct">0%</span>
-        </div>
-      </form>
-      <div class="vLine"></div>
-      <form action="./scripts/_uploader.php" id="localVideoUpload" method="post" enctype="multipart/form-data">
-        <div class="videoUpload">
-          <button type="button" name="uploadFile" onclick="document.getElementById('fileUpload').click();">
-            <span class="gicon">upload</span>
-            <p>Upload Video</p>
-          </button>
-          <span id="fileNameDisplay" style="font-size: 14px; color: #888;"></span>
-        </div>
-        <input type="file" name="videos" id="fileUpload" accept="video/*" style="display: none;" required>
-        <button type="submit" name="upload" style="display: flex;">Upload</button>
-        <div id="videoUploadProgressWrap">
-          <progress id="videoUploadProgress" value="0" max="100"></progress>
-          <span id="videoUploadProgressText">0%</span>
-        </div>
-        <div id="videoUploadStatus"></div>
-      </form>
-    </div>
   </div>
-  <div class="pageFiltertab" style="display: none;">
-    <div class="filterTab">
-      <button>Random</button>
-      <button>Newest</button>
-      <button>Oldest</button>
-      <button>Favorites</button>
-      <button>Playlists</button>
-    </div>
-  </div>
-  <div class="PostLoadedArea"></div>
-  <script>
-    function setVideoUploadProgress(percent) {
-      const normalized = Math.max(0, Math.min(100, percent || 0));
-      $('#videoUploadProgress').val(normalized);
-      $('#videoUploadProgressText').text(`${normalized}%`);
-    }
+  <?php
+}
+?>
+<div id="spinner" style="display: none;">
+<l-zoomies size="150" stroke="5" bg-opacity="0.1" speed="1.4" color="#ff4500"></l-zoomies>
+</div>
+<nav class="mediaTopNav">
+<div class="navLeft">
+<h3>MediaHoard <span><?= $version; ?></span></h3>
+</div>
+<div class="navRight">
+<div class="videoPostForm mediaNavActions">
+<h3>Videos</h3>
+<button type="button" name="uploadMenu" onclick="toggleUploadtab()" class="navAction"
+aria-label="Upload videos">
+<span class="gicon">upload</span>
+<p>Upload</p>
+</button>
+<button type="button" name="imagesPage" onclick="window.location.href='./img/'" class="navAction"
+aria-label="Go to images">
+<span class="gicon">image</span>
+<p>Images</p>
+</button>
+<button type="button" onclick="togglePageFiltertab()" class="navAction" aria-label="Open filters">
+<span class="gicon">filter_alt</span>
+<p>Filter</p>
+</button>
+<button type="button" onclick="window.location.href='./settings/'" class="navAction" aria-label="Open settings">
+<span class="gicon">settings</span>
+<p>Settings</p>
+</button>
+</div>
+</div>
+</nav>
+<div class="uploadMenu" id="uploadMenu" style="display: none;">
+<div class="uploadContainer">
+<div class="topUploadTitle">
+<h3>Choose an option</h3>
+<button type="button" onclick="toggleUploadtab()">
+<span class="gicon">close</span>
+</button>
+</div>
+<form id="webVideoUpload">
+<input type="text" name="url" placeholder="YouTube URL" required>
+<button id="ytSubmitBtn" type="submit" style="display: flex;">Download</button>
+<div id="ytDownloadStatus"></div>
+<div id="ytDownloadProgressWrap">
+<progress id="ytDownloadProgressBar" value="0" max="100"></progress>
+<span id="ytDownloadProgressPct">0%</span>
+</div>
+</form>
+<div class="vLine"></div>
+<form action="./scripts/_uploader.php" id="localVideoUpload" method="post" enctype="multipart/form-data">
+<div class="videoUpload">
+<button type="button" name="uploadFile" onclick="document.getElementById('fileUpload').click();">
+<span class="gicon">upload</span>
+<p>Upload Video</p>
+</button>
+<span id="fileNameDisplay" style="font-size: 14px; color: #888;"></span>
+</div>
+<input type="file" name="videos" id="fileUpload" accept="video/*" style="display: none;" required>
+<button type="submit" name="upload" style="display: flex;">Upload</button>
+<div id="videoUploadProgressWrap">
+<progress id="videoUploadProgress" value="0" max="100"></progress>
+<span id="videoUploadProgressText">0%</span>
+</div>
+<div id="videoUploadStatus"></div>
+</form>
+</div>
+</div>
+<div class="pageFiltertab" style="display: none;">
+<div class="filterTab">
+<button>Random</button>
+<button>Newest</button>
+<button>Oldest</button>
+<button>Favorites</button>
+<button>Playlists</button>
+</div>
+</div>
+<div class="PostLoadedArea"></div>
+<script>
+function setVideoUploadProgress(percent) {
+  const normalized = Math.max(0, Math.min(100, percent || 0));
+  $('#videoUploadProgress').val(normalized);
+  $('#videoUploadProgressText').text(`${normalized}%`);
+}
 
-    function resetVideoUploadProgress() {
-      $('#videoUploadProgressWrap').hide();
-      setVideoUploadProgress(0);
-    }
+function resetVideoUploadProgress() {
+  $('#videoUploadProgressWrap').hide();
+  setVideoUploadProgress(0);
+}
 
-    document.getElementById("fileUpload").addEventListener("change", function () {
-      const fileInput = this;
-      const fileNameDisplay = document.getElementById("fileNameDisplay");
+document.getElementById("fileUpload").addEventListener("change", function () {
+  const fileInput = this;
+  const fileNameDisplay = document.getElementById("fileNameDisplay");
+  
+  if (fileInput.files.length > 0) {
+    fileNameDisplay.textContent = fileInput.files[0].name;
+  } else {
+    fileNameDisplay.textContent = "";
+  }
+});
 
-      if (fileInput.files.length > 0) {
-        fileNameDisplay.textContent = fileInput.files[0].name;
-      } else {
-        fileNameDisplay.textContent = "";
-      }
-    });
-
-    $(function () {
-      $('#localVideoUpload').on('submit', function (e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-
-        $.ajax({
-          url: './scripts/_uploader.php',
-          type: 'POST',
-          data: formData,
-          processData: false,
-          contentType: false,
-          dataType: 'json',
-          xhr: function () {
-            const xhr = $.ajaxSettings.xhr();
-            if (xhr.upload) {
-              xhr.upload.addEventListener('progress', function (event) {
-                if (!event.lengthComputable) return;
-                const percent = Math.round((event.loaded / event.total) * 100);
-                setVideoUploadProgress(percent);
-              });
-            }
-            return xhr;
-          },
-          beforeSend: function () {
-            $('#videoUploadStatus').text('Uploading...');
-            $('#videoUploadProgressWrap').show();
-            setVideoUploadProgress(0);
-            $('#localVideoUpload button[type="submit"]').prop('disabled', true);
-          },
-          success: function (data) {
-            setVideoUploadProgress(100);
-            if (data && data.success && data.redirect) {
-              window.location.href = data.redirect;
-              return;
-            }
-
-            $('#videoUploadStatus').text((data && data.message) ? data.message : 'Upload complete.');
-            fetchAndLoadPosts();
-          },
-          error: function (jqXHR) {
-            const response = jqXHR.responseJSON;
-            const message = response && response.message ? response.message : 'Upload failed.';
-            $('#videoUploadStatus').text(message);
-          },
-          complete: function () {
-            $('#localVideoUpload button[type="submit"]').prop('disabled', false);
-            setTimeout(resetVideoUploadProgress, 700);
-          }
-        });
-      });
-
-      $('#webVideoUpload').on('submit', function (e) {
-        e.preventDefault();
-        const url = $('input[name="url"]', this).val().trim();
-        if (!url) return;
-
-        // Generate a numeric job ID the backend will use for the progress file
-        const jobId = Date.now().toString() + Math.floor(Math.random() * 9000 + 1000).toString();
-
-        const $btn    = $('#ytSubmitBtn');
-        const $status = $('#ytDownloadStatus');
-        const $wrap   = $('#ytDownloadProgressWrap');
-        const $bar    = $('#ytDownloadProgressBar');
-        const $pct    = $('#ytDownloadProgressPct');
-
-        function setProgress(p) {
-          p = Math.min(100, Math.max(0, Math.round(p)));
-          $bar.val(p);
-          $pct.text(p + '%');
-        }
-
-        $btn.prop('disabled', true).text('Downloading...');
-        $status.text('Starting download\u2026').show();
-        $wrap.show();
-        setProgress(0);
-
-        // Poll for progress every second
-        const pollInterval = setInterval(function () {
-          $.getJSON('./scripts/_dlProgress.php', { id: jobId }, function (data) {
-            if (data && typeof data.percent === 'number' && data.percent > 0) {
-              setProgress(data.percent);
-              $status.text('Downloading\u2026 ' + Math.round(data.percent) + '%');
-            }
+$(function () {
+  $('#localVideoUpload').on('submit', function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    $.ajax({
+      url: './scripts/_uploader.php',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      dataType: 'json',
+      xhr: function () {
+        const xhr = $.ajaxSettings.xhr();
+        if (xhr.upload) {
+          xhr.upload.addEventListener('progress', function (event) {
+            if (!event.lengthComputable) return;
+            const percent = Math.round((event.loaded / event.total) * 100);
+            setVideoUploadProgress(percent);
           });
-        }, 1000);
-
-        $.ajax({
-          url: './scripts/_downloader.php',
-          type: 'GET',
-          data: { url: url, jobId: jobId },
-          dataType: 'json',
-          timeout: 0,
-          success: function (data) {
-            clearInterval(pollInterval);
-            if (data && data.success && data.redirect) {
-              setProgress(100);
-              $status.text('Done! Redirecting\u2026');
-              window.location.href = data.redirect;
-            } else {
-              const msg = (data && data.message) ? data.message : 'Download failed.';
-              $status.text('Error: ' + msg);
-              $wrap.hide();
-              $('#spinner').hide();
-              $btn.prop('disabled', false).text('Download');
-            }
-          },
-          error: function (jqXHR) {
-            clearInterval(pollInterval);
-            const response = jqXHR.responseJSON;
-            const message = response && response.message ? response.message : 'Download failed. Please try again.';
-            $status.text('Error: ' + message);
-            $wrap.hide();
-            $('#spinner').hide();
-            $btn.prop('disabled', false).text('Download');
-          }
-        });
-      });
+        }
+        return xhr;
+      },
+      beforeSend: function () {
+        $('#videoUploadStatus').text('Uploading...');
+        $('#videoUploadProgressWrap').show();
+        setVideoUploadProgress(0);
+        $('#localVideoUpload button[type="submit"]').prop('disabled', true);
+      },
+      success: function (data) {
+        setVideoUploadProgress(100);
+        if (data && data.success && data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
+        
+        $('#videoUploadStatus').text((data && data.message) ? data.message : 'Upload complete.');
+        fetchAndLoadPosts();
+      },
+      error: function (jqXHR) {
+        const response = jqXHR.responseJSON;
+        const message = response && response.message ? response.message : 'Upload failed.';
+    $('#videoUploadStatus').text(message);
+      },
+      complete: function () {
+        $('#localVideoUpload button[type="submit"]').prop('disabled', false);
+        setTimeout(resetVideoUploadProgress, 700);
+      }
     });
-
-    const VIDEO_CHUNK_SIZE = 24;
-    let allPosts = [];
-    let activePosts = [];
-    let renderedCount = 0;
-    let isRenderingChunk = false;
-    let tagsMap = {};
-    let activeTag = '';
-    const tagsEndpoint = './scripts/utility/_videoTags.php';
-    let videoFeedObserver = null;
-    const videoLoadSentinelId = 'videoLoadSentinel';
-
-    function normalizeTag(tag) {
-      return String(tag || '').trim().toLowerCase();
+  });
+  
+  $('#webVideoUpload').on('submit', function (e) {
+    e.preventDefault();
+    const url = $('input[name="url"]', this).val().trim();
+    if (!url) return;
+    
+    // Generate a numeric job ID the backend will use for the progress file
+    const jobId = Date.now().toString() + Math.floor(Math.random() * 9000 + 1000).toString();
+    
+    const $btn    = $('#ytSubmitBtn');
+    const $status = $('#ytDownloadStatus');
+    const $wrap   = $('#ytDownloadProgressWrap');
+    const $bar    = $('#ytDownloadProgressBar');
+    const $pct    = $('#ytDownloadProgressPct');
+    
+    function setProgress(p) {
+      p = Math.min(100, Math.max(0, Math.round(p)));
+      $bar.val(p);
+      $pct.text(p + '%');
     }
-
-    function setTagInUrl(tag) {
-      const url = new URL(window.location.href);
-      if (tag) {
-        url.searchParams.set('tag', tag);
-      } else {
-        url.searchParams.delete('tag');
-      }
-      window.history.replaceState({}, '', url.toString());
-    }
-
-    function ensureTagStyles() {
-      if (document.getElementById('video-tag-styles')) return;
-      const style = document.createElement('style');
-      style.id = 'video-tag-styles';
-      style.textContent = `
-        .post-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .tag-chip {
-          border: 1px solid rgba(255,255,255,0.2);
-          background: rgba(255,255,255,0.08);
-          color: inherit;
-          border-radius: 999px;
-          padding: 4px 10px;
-          font-size: 12px;
-          cursor: pointer;
+    
+    $btn.prop('disabled', true).text('Downloading...');
+    $status.text('Starting download\u2026').show();
+    $wrap.show();
+    setProgress(0);
+    
+    // Poll for progress every second
+    const pollInterval = setInterval(function () {
+      $.getJSON('./scripts/_dlProgress.php', { id: jobId }, function (data) {
+        if (data && typeof data.percent === 'number' && data.percent > 0) {
+          setProgress(data.percent);
+          $status.text('Downloading\u2026 ' + Math.round(data.percent) + '%');
         }
-
-        .playlist-hub {
-          display: grid;
-          gap: 12px;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        }
-
-        .playlist-card {
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 12px;
-          padding: 12px;
-          background: rgba(255,255,255,0.03);
-        }
-
-        .playlist-title {
-          font-size: 16px;
-          margin-bottom: 8px;
-          font-weight: 700;
-        }
-
-        .playlist-meta {
-          font-size: 12px;
-          opacity: 0.8;
-          margin-bottom: 10px;
-        }
-
-        .playlist-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .playlist-actions button {
-          border: none;
-          border-radius: 999px;
-          padding: 6px 12px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-        .playlist-play {
-          background: #fff;
-          color: #000;
-        }
-
-        .playlist-view {
-          background: rgba(255,255,255,0.2);
-          color: #fff;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    function buildVideoUrl(post, tag = activeTag) {
-      const tagQuery = tag ? `&tag=${encodeURIComponent(tag)}` : '';
-      return `./video/_video.php?id=${post.PUID}&time=${post.Time}&title=${encodeURIComponent(post.title)}&video_path=${encodeURIComponent(post.video_path)}&thumbnail_path=${encodeURIComponent(post.thumbnail_path)}${tagQuery}`;
-    }
-
-    function buildPlaylists() {
-      const playlistMap = new Map();
-
-      allPosts.forEach(post => {
-        const tags = getPostTags(post);
-        tags.forEach(tag => {
-          const normalized = normalizeTag(tag);
-          if (!normalized) return;
-          if (!playlistMap.has(normalized)) {
-            playlistMap.set(normalized, []);
-          }
-          playlistMap.get(normalized).push(post);
-        });
       });
-
-      const playlists = Array.from(playlistMap.entries()).map(([tag, posts]) => ({
-        tag,
-        posts: sortByNewest(posts),
-        count: posts.length
-      }));
-
-      playlists.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
-      return playlists;
-    }
-
-    function renderPlaylistsHub() {
-      const container = document.querySelector('.PostLoadedArea');
-      const playlists = buildPlaylists();
-
-      if (playlists.length === 0) {
-        container.innerHTML = `<div class="noPosts">No playlists yet. Add tags to videos first.</div>`;
-        return;
+    }, 1000);
+    
+    $.ajax({
+      url: './scripts/_downloader.php',
+      type: 'GET',
+      data: { url: url, jobId: jobId },
+      dataType: 'json',
+      timeout: 0,
+      success: function (data) {
+        clearInterval(pollInterval);
+        if (data && data.success && data.redirect) {
+          setProgress(100);
+          $status.text('Done! Redirecting\u2026');
+          window.location.href = data.redirect;
+        } else {
+          const msg = (data && data.message) ? data.message : 'Download failed.';
+    $status.text('Error: ' + msg);
+    $wrap.hide();
+    $('#spinner').hide();
+    $btn.prop('disabled', false).text('Download');
+        }
+      },
+      error: function (jqXHR) {
+        clearInterval(pollInterval);
+        const response = jqXHR.responseJSON;
+        const message = response && response.message ? response.message : 'Download failed. Please try again.';
+    $status.text('Error: ' + message);
+    $wrap.hide();
+    $('#spinner').hide();
+    $btn.prop('disabled', false).text('Download');
       }
+    });
+  });
+});
 
-      container.innerHTML = `
-        <div class="playlist-hub">
-          ${playlists.map(playlist => `
-            <div class="playlist-card">
-              <div class="playlist-title">#${playlist.tag}</div>
-              <div class="playlist-meta">${playlist.count} video${playlist.count === 1 ? '' : 's'}</div>
-              <div class="playlist-actions">
-                <button type="button" class="playlist-play" data-tag="${encodeURIComponent(playlist.tag)}">Play</button>
-                <button type="button" class="playlist-view" data-tag="${encodeURIComponent(playlist.tag)}">View</button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
+const VIDEO_CHUNK_SIZE = 24;
+let allPosts = [];
+let activePosts = [];
+let renderedCount = 0;
+let isRenderingChunk = false;
+let tagsMap = {};
+let activeTag = '';
+const tagsEndpoint = './scripts/utility/_videoTags.php';
+let videoFeedObserver = null;
+const videoLoadSentinelId = 'videoLoadSentinel';
 
-    function playPlaylist(tag) {
+function normalizeTag(tag) {
+  return String(tag || '').trim().toLowerCase();
+}
+
+function setTagInUrl(tag) {
+  const url = new URL(window.location.href);
+  if (tag) {
+    url.searchParams.set('tag', tag);
+  } else {
+    url.searchParams.delete('tag');
+  }
+  window.history.replaceState({}, '', url.toString());
+}
+
+function ensureTagStyles() {
+  if (document.getElementById('video-tag-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'video-tag-styles';
+  style.textContent = `
+  .post-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag-chip {
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: inherit;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  
+  .playlist-hub {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  
+  .playlist-card {
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.03);
+  }
+  
+  .playlist-title {
+    font-size: 16px;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  
+  .playlist-meta {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-bottom: 10px;
+  }
+  
+  .playlist-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .playlist-actions button {
+    border: none;
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .playlist-play {
+    background: #fff;
+    color: #000;
+  }
+  
+  .playlist-view {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+  }
+  `;
+  document.head.appendChild(style);
+}
+
+function buildVideoUrl(post, tag = activeTag) {
+  const tagQuery = tag ? `&tag=${encodeURIComponent(tag)}` : '';
+  return `./video/_video.php?id=${post.PUID}&time=${post.Time}&title=${encodeURIComponent(post.title)}&video_path=${encodeURIComponent(post.video_path)}&thumbnail_path=${encodeURIComponent(post.thumbnail_path)}${tagQuery}`;
+}
+
+function buildPlaylists() {
+  const playlistMap = new Map();
+  
+  allPosts.forEach(post => {
+    const tags = getPostTags(post);
+    tags.forEach(tag => {
       const normalized = normalizeTag(tag);
-      const container = document.querySelector('.PostLoadedArea');
       if (!normalized) return;
-
-      const filtered = sortByNewest(allPosts.filter(post => {
-        const tags = getPostTags(post).map(normalizeTag);
-        return tags.includes(normalized);
-      }));
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="noPosts">No videos found for #${normalized}.</div>`;
-        return;
+      if (!playlistMap.has(normalized)) {
+        playlistMap.set(normalized, []);
       }
+      playlistMap.get(normalized).push(post);
+    });
+  });
+  
+  const playlists = Array.from(playlistMap.entries()).map(([tag, posts]) => ({
+    tag,
+    posts: sortByNewest(posts),
+                                                                             count: posts.length
+  }));
+  
+  playlists.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  return playlists;
+}
 
-      window.location.href = buildVideoUrl(filtered[0], normalized);
-    }
-
-    function getPostTags(post) {
-      if (!post || !post.PUID) return [];
-      const tags = tagsMap[post.PUID];
-      return Array.isArray(tags) ? tags : [];
-    }
-
-    function escapeHtml(text) {
-      return String(text ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function resolveThumbnailPath(path) {
-      if (typeof path !== 'string') return '';
-      const normalized = path.trim();
-      if (!normalized) return '';
-
-      if (/^(https?:)?\/\//i.test(normalized) || normalized.startsWith('data:')) {
-        return normalized;
-      }
-
-      if (normalized.startsWith('./') || normalized.startsWith('../')) {
-        return normalized;
-      }
-
-      return normalized.startsWith('/') ? `.${normalized}` : `./${normalized}`;
-    }
-
-    function attachThumbnailFallbacks(scope = document) {
-      const thumbnails = scope.querySelectorAll('img.post-thumbnail');
-      thumbnails.forEach((img) => {
-        if (img.dataset.fallbackBound === '1') return;
-        img.dataset.fallbackBound = '1';
-
-        img.addEventListener('error', () => {
-          const wrapper = img.closest('.post-thumbnail-wrap');
-          if (!wrapper || wrapper.querySelector('.post-thumbnail-fallback')) return;
-
-          const title = img.dataset.title || 'Video thumbnail';
-          wrapper.classList.add('is-fallback');
-          wrapper.insertAdjacentHTML('beforeend', `
-            <div class="post-thumbnail-fallback" aria-label="${escapeHtml(title)} thumbnail unavailable">
-              <span class="gicon" aria-hidden="true">movie</span>
-              <span>Preview unavailable</span>
-            </div>
-          `);
-          img.remove();
-        }, { once: true });
-      });
-    }
-
-    function createPostCard(post) {
-      if (!post || !post.video_path || !post.title) return '';
-      const decodedTitle = decodeHTMLEntities(post.title);
-      const thumbnailPath = resolveThumbnailPath(post.thumbnail_path);
-      const videoUID = post.PUID;
-      const date = new Date(post.Time * 1000).toLocaleDateString();
-      const tags = getPostTags(post);
-      const tagsHtml = tags.length
-        ? `<div class="post-tags">${tags.map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`).join('')}</div>`
-        : '';
-      const thumbnailHtml = thumbnailPath
-        ? `<img src="${thumbnailPath}" alt="${escapeHtml(decodedTitle)} thumbnail" loading="lazy" decoding="async" class="post-thumbnail" data-title="${escapeHtml(decodedTitle)}">`
-        : `<div class="post-thumbnail-fallback" aria-label="${escapeHtml(decodedTitle)} thumbnail unavailable">
-             <span class="gicon" aria-hidden="true">movie</span>
-             <span>Preview unavailable</span>
-           </div>`;
-      return `
-      <div class="post-card">
-        <a href="${buildVideoUrl(post)}" class="post-link">
-          <div class="post-thumbnail-wrap">
-            ${thumbnailHtml}
-          </div>
-          <h3 class="post-title">${decodedTitle}</h3>
-        </a>
-        <p class="post-date">Posted: ${date}</p>
-        ${tagsHtml}
-      </div>
+function renderPlaylistsHub() {
+  const container = document.querySelector('.PostLoadedArea');
+  const playlists = buildPlaylists();
+  
+  if (playlists.length === 0) {
+    container.innerHTML = `<div class="noPosts">No playlists yet. Add tags to videos first.</div>`;
+    return;
+  }
+  
+  container.innerHTML = `
+  <div class="playlist-hub">
+  ${playlists.map(playlist => `
+    <div class="playlist-card">
+    <div class="playlist-title">#${playlist.tag}</div>
+    <div class="playlist-meta">${playlist.count} video${playlist.count === 1 ? '' : 's'}</div>
+    <div class="playlist-actions">
+    <button type="button" class="playlist-play" data-tag="${encodeURIComponent(playlist.tag)}">Play</button>
+    <button type="button" class="playlist-view" data-tag="${encodeURIComponent(playlist.tag)}">View</button>
+    </div>
+    </div>
+    `).join('')}
+    </div>
     `;
-    }
+}
 
-    function loadPosts(data) {
-      const container = document.querySelector('.PostLoadedArea');
-      if (!container) return;
-      if (!Array.isArray(data)) {
-        container.innerHTML = `<div class="noPosts">Invalid data format.</div>`;
-        return;
-      }
-      if (data.length === 0) {
-        container.innerHTML = `<div class="noPosts">No posts available.</div>`;
-        return;
-      }
-      allPosts = data;
-      if (activeTag) {
-        applyTagFilter(activeTag);
-      } else {
-        renderPostsOptimized(sortByNewest(data));
-      }
-    }
+function playPlaylist(tag) {
+  const normalized = normalizeTag(tag);
+  const container = document.querySelector('.PostLoadedArea');
+  if (!normalized) return;
+  
+  const filtered = sortByNewest(allPosts.filter(post => {
+    const tags = getPostTags(post).map(normalizeTag);
+    return tags.includes(normalized);
+  }));
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="noPosts">No videos found for #${normalized}.</div>`;
+    return;
+  }
+  
+  window.location.href = buildVideoUrl(filtered[0], normalized);
+}
 
-    function renderPostsOptimized(posts) {
-      const container = document.querySelector('.PostLoadedArea');
-      if (!container) return;
-      if (!Array.isArray(posts) || posts.length === 0) {
-        container.innerHTML = `<div class="noPosts">No posts available.</div>`;
-        return;
-      }
-      activePosts = posts;
-      renderedCount = 0;
-      isRenderingChunk = false;
-      container.innerHTML = '';
-      
-      // Create or reuse sentinel element for IntersectionObserver
-      let sentinel = document.getElementById(videoLoadSentinelId);
-      if (!sentinel) {
-        sentinel = document.createElement('div');
-        sentinel.id = videoLoadSentinelId;
-        sentinel.setAttribute('aria-hidden', 'true');
-        sentinel.style.cssText = 'height:1px;width:100%;';
-      }
-      
-      renderNextChunk();
-      
-      // Add sentinel after initial chunk
-      if (renderedCount < activePosts.length) {
-        container.appendChild(sentinel);
-        setupVideoFeedObserver(sentinel);
-      }
-    }
+function getPostTags(post) {
+  if (!post || !post.PUID) return [];
+  const tags = tagsMap[post.PUID];
+  return Array.isArray(tags) ? tags : [];
+}
 
-    function setupVideoFeedObserver(sentinel) {
+function escapeHtml(text) {
+  return String(text ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+}
+
+function resolveThumbnailPath(path) {
+  if (typeof path !== 'string') return '';
+  const normalized = path.trim();
+  if (!normalized) return '';
+  
+  if (/^(https?:)?\/\//i.test(normalized) || normalized.startsWith('data:')) {
+    return normalized;
+  }
+  
+  if (normalized.startsWith('./') || normalized.startsWith('../')) {
+    return normalized;
+  }
+  
+  return normalized.startsWith('/') ? `.${normalized}` : `./${normalized}`;
+}
+
+function attachThumbnailFallbacks(scope = document) {
+  const thumbnails = scope.querySelectorAll('img.post-thumbnail');
+  thumbnails.forEach((img) => {
+    if (img.dataset.fallbackBound === '1') return;
+    img.dataset.fallbackBound = '1';
+    
+    img.addEventListener('error', () => {
+      const wrapper = img.closest('.post-thumbnail-wrap');
+      if (!wrapper || wrapper.querySelector('.post-thumbnail-fallback')) return;
+      
+      const title = img.dataset.title || 'Video thumbnail';
+      wrapper.classList.add('is-fallback');
+      wrapper.insertAdjacentHTML('beforeend', `
+      <div class="post-thumbnail-fallback" aria-label="${escapeHtml(title)} thumbnail unavailable">
+      <span class="gicon" aria-hidden="true">movie</span>
+      <span>Preview unavailable</span>
+      </div>
+      `);
+      img.remove();
+    }, { once: true });
+  });
+}
+
+function createPostCard(post) {
+  if (!post || !post.video_path || !post.title) return '';
+  const decodedTitle = decodeHTMLEntities(post.title);
+  const thumbnailPath = resolveThumbnailPath(post.thumbnail_path);
+  const videoUID = post.PUID;
+  const date = new Date(post.Time * 1000).toLocaleDateString();
+  const tags = getPostTags(post);
+  const tagsHtml = tags.length
+  ? `<div class="post-tags">${tags.map(tag => `<button type="button" class="tag-chip" data-tag="${encodeURIComponent(tag)}">#${tag}</button>`).join('')}</div>`
+  : '';
+  const thumbnailHtml = thumbnailPath
+  ? `<img src="${thumbnailPath}" alt="${escapeHtml(decodedTitle)} thumbnail" loading="lazy" decoding="async" class="post-thumbnail" data-title="${escapeHtml(decodedTitle)}">`
+  : `<div class="post-thumbnail-fallback" aria-label="${escapeHtml(decodedTitle)} thumbnail unavailable">
+  <span class="gicon" aria-hidden="true">movie</span>
+  <span>Preview unavailable</span>
+  </div>`;
+  return `
+  <div class="post-card">
+  <a href="${buildVideoUrl(post)}" class="post-link">
+  <div class="post-thumbnail-wrap">
+  ${thumbnailHtml}
+  </div>
+  <h3 class="post-title">${decodedTitle}</h3>
+  </a>
+  <p class="post-date">Posted: ${date}</p>
+  ${tagsHtml}
+  </div>
+  `;
+}
+
+function loadPosts(data) {
+  const container = document.querySelector('.PostLoadedArea');
+  if (!container) return;
+  if (!Array.isArray(data)) {
+    container.innerHTML = `<div class="noPosts">Invalid data format.</div>`;
+    return;
+  }
+  if (data.length === 0) {
+    container.innerHTML = `<div class="noPosts">No posts available.</div>`;
+    return;
+  }
+  allPosts = data;
+  if (activeTag) {
+    applyTagFilter(activeTag);
+  } else {
+    renderPostsOptimized(sortByNewest(data));
+  }
+}
+
+function renderPostsOptimized(posts) {
+  const container = document.querySelector('.PostLoadedArea');
+  if (!container) return;
+  if (!Array.isArray(posts) || posts.length === 0) {
+    container.innerHTML = `<div class="noPosts">No posts available.</div>`;
+    return;
+  }
+  activePosts = posts;
+  renderedCount = 0;
+  isRenderingChunk = false;
+  container.innerHTML = '';
+  
+  // Create or reuse sentinel element for IntersectionObserver
+  let sentinel = document.getElementById(videoLoadSentinelId);
+  if (!sentinel) {
+    sentinel = document.createElement('div');
+    sentinel.id = videoLoadSentinelId;
+    sentinel.setAttribute('aria-hidden', 'true');
+    sentinel.style.cssText = 'height:1px;width:100%;';
+  }
+  
+  renderNextChunk();
+  
+  // Add sentinel after initial chunk
+  if (renderedCount < activePosts.length) {
+    container.appendChild(sentinel);
+    setupVideoFeedObserver(sentinel);
+  }
+}
+
+function setupVideoFeedObserver(sentinel) {
+  if (videoFeedObserver) {
+    videoFeedObserver.disconnect();
+  }
+  
+  if ('IntersectionObserver' in window) {
+    videoFeedObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          renderNextChunk();
+        }
+      }
+    }, {
+      root: null,
+      rootMargin: '500px 0px',
+      threshold: 0
+    });
+    
+    videoFeedObserver.observe(sentinel);
+  }
+}
+
+function renderNextChunk() {
+  const container = document.querySelector('.PostLoadedArea');
+  if (!container || isRenderingChunk) return;
+  if (renderedCount >= activePosts.length) return;
+  
+  isRenderingChunk = true;
+  const start = renderedCount;
+  const end = Math.min(renderedCount + VIDEO_CHUNK_SIZE, activePosts.length);
+  const fragment = document.createDocumentFragment();
+  
+  for (let i = start; i < end; i++) {
+    const cardHtml = createPostCard(activePosts[i]);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = cardHtml;
+    fragment.appendChild(tempDiv.firstElementChild);
+  }
+  
+  container.appendChild(fragment);
+  attachThumbnailFallbacks(container);
+  renderedCount = end;
+  isRenderingChunk = false;
+  
+  // Update or remove sentinel based on remaining items
+  const sentinel = document.getElementById(videoLoadSentinelId);
+  if (sentinel) {
+    if (renderedCount >= activePosts.length) {
+      sentinel.remove();
       if (videoFeedObserver) {
         videoFeedObserver.disconnect();
-      }
-      
-      if ('IntersectionObserver' in window) {
-        videoFeedObserver = new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              renderNextChunk();
-            }
-          }
-        }, {
-          root: null,
-          rootMargin: '500px 0px',
-          threshold: 0
-        });
-        
-        videoFeedObserver.observe(sentinel);
+        videoFeedObserver = null;
       }
     }
+  }
+}
 
-    function renderNextChunk() {
-      const container = document.querySelector('.PostLoadedArea');
-      if (!container || isRenderingChunk) return;
-      if (renderedCount >= activePosts.length) return;
+function renderPosts(posts) {
+  renderPostsOptimized(posts);
+}
 
-      isRenderingChunk = true;
-      const start = renderedCount;
-      const end = Math.min(renderedCount + VIDEO_CHUNK_SIZE, activePosts.length);
-      const fragment = document.createDocumentFragment();
+function sortByNewest(posts) {
+  return [...posts].sort((a, b) => b.Time - a.Time);
+}
 
-      for (let i = start; i < end; i++) {
-        const cardHtml = createPostCard(activePosts[i]);
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = cardHtml;
-        fragment.appendChild(tempDiv.firstElementChild);
-      }
+function sortByOldest(posts) {
+  return [...posts].sort((a, b) => a.Time - b.Time);
+}
 
-      container.appendChild(fragment);
-      attachThumbnailFallbacks(container);
-      renderedCount = end;
-      isRenderingChunk = false;
+function sortByRandom(posts) {
+  const shuffled = [...posts];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
-      // Update or remove sentinel based on remaining items
-      const sentinel = document.getElementById(videoLoadSentinelId);
-      if (sentinel) {
-        if (renderedCount >= activePosts.length) {
-          sentinel.remove();
-          if (videoFeedObserver) {
-            videoFeedObserver.disconnect();
-            videoFeedObserver = null;
-          }
-        }
-      }
+function setupFilterButtons() {
+  document.querySelector('.filterTab button:nth-child(1)').addEventListener('click', () => {
+    activeTag = '';
+  setTagInUrl('');
+  renderPostsOptimized(sortByRandom(allPosts));
+  });
+  
+  document.querySelector('.filterTab button:nth-child(2)').addEventListener('click', () => {
+    activeTag = '';
+  setTagInUrl('');
+  renderPostsOptimized(sortByNewest(allPosts));
+  });
+  
+  document.querySelector('.filterTab button:nth-child(3)').addEventListener('click', () => {
+    activeTag = '';
+  setTagInUrl('');
+  renderPostsOptimized(sortByOldest(allPosts));
+  });
+  
+  document.querySelector('.filterTab button:nth-child(4)').addEventListener('click', async () => {
+    activeTag = '';
+  setTagInUrl('');
+  const container = document.querySelector('.PostLoadedArea');
+  try {
+    const resp = await fetch('./video/favoriteVideos.json');
+    if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+    const favs = await resp.json();
+    if (!Array.isArray(favs) || favs.length === 0) {
+      container.innerHTML = `<div class="noPosts">No favorites yet.</div>`;
+      return;
     }
-
-    function renderPosts(posts) {
-      renderPostsOptimized(posts);
+    const favSet = new Set(favs);
+    const filtered = allPosts.filter(p => favSet.has(p.PUID));
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="noPosts">No favorite posts found.</div>`;
+      return;
     }
-
-    function sortByNewest(posts) {
-      return [...posts].sort((a, b) => b.Time - a.Time);
+    renderPostsOptimized(sortByNewest(filtered));
+  } catch (error) {
+    console.error('Favorites fetch error:', error.message || error);
+    container.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
+  }
+  });
+  
+  document.querySelector('.filterTab button:nth-child(5)').addEventListener('click', () => {
+    activeTag = '';
+  setTagInUrl('');
+  renderPlaylistsHub();
+  });
+  
+  document.querySelector('.PostLoadedArea').addEventListener('click', (event) => {
+    const playlistPlay = event.target.closest('.playlist-play');
+    if (playlistPlay) {
+      event.preventDefault();
+      const rawTag = decodeURIComponent(playlistPlay.dataset.tag || '');
+      playPlaylist(rawTag);
+      return;
     }
-
-    function sortByOldest(posts) {
-      return [...posts].sort((a, b) => a.Time - b.Time);
+    
+    const playlistView = event.target.closest('.playlist-view');
+    if (playlistView) {
+      event.preventDefault();
+      const rawTag = decodeURIComponent(playlistView.dataset.tag || '');
+      applyTagFilter(rawTag);
+      return;
     }
+    
+    const target = event.target.closest('.tag-chip');
+    if (!target) return;
+    event.preventDefault();
+    const rawTag = decodeURIComponent(target.dataset.tag || '');
+    applyTagFilter(rawTag);
+  });
+}
 
-    function sortByRandom(posts) {
-      const shuffled = [...posts];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
+function applyTagFilter(tag) {
+  const normalized = normalizeTag(tag);
+  const container = document.querySelector('.PostLoadedArea');
+  
+  if (!normalized) {
+    activeTag = '';
+    setTagInUrl('');
+    renderPostsOptimized(sortByNewest(allPosts));
+    return;
+  }
+  
+  activeTag = normalized;
+  setTagInUrl(normalized);
+  
+  const filtered = allPosts.filter(post => {
+    const tags = getPostTags(post).map(normalizeTag);
+    return tags.includes(normalized);
+  });
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="noPosts">No videos found for #${normalized}.</div>`;
+    return;
+  }
+  
+  renderPostsOptimized(sortByNewest(filtered));
+}
+
+function decodeHTMLEntities(text) {
+  const textArea = document.createElement('textarea');
+  textArea.innerHTML = text;
+  return textArea.value;
+}
+
+function toggleSpinner() {
+  const spinner = document.querySelector('#spinner');
+  spinner.style.display = spinner.style.display === 'none' ? 'flex' : 'none';
+}
+
+function togglePageFiltertab() {
+  const pageFiltertab = document.querySelector('.pageFiltertab');
+  pageFiltertab.style.display = pageFiltertab.style.display === 'none' ? 'flex' : 'none';
+}
+
+function toggleUploadtab() {
+  const uploadMenu = document.querySelector('.uploadMenu');
+  uploadMenu.style.display = uploadMenu.style.display === 'none' ? 'flex' : 'none';
+}
+
+function fetchAndLoadPosts() {
+  Promise.all([
+    fetch('./video/posts.json').then(response => {
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.json();
+    }),
+    fetch(tagsEndpoint)
+    .then(response => response.ok ? response.json() : { success: true, tagsMap: {} })
+    .catch(() => ({ success: true, tagsMap: {} }))
+  ])
+  .then(([postData, tagsData]) => {
+    tagsMap = tagsData && tagsData.success && tagsData.tagsMap ? tagsData.tagsMap : {};
+    loadPosts(postData);
+    setupFilterButtons();
+  })
+  .catch(error => {
+    console.error("Fetch error:", error.message);
+    const container = document.querySelector('.PostLoadedArea');
+    if (container) {
+      container.innerHTML = `<div class="noPosts">Error loading posts. Please try again later.</div>`;
     }
+  });
+}
 
-    function setupFilterButtons() {
-      document.querySelector('.filterTab button:nth-child(1)').addEventListener('click', () => {
-        activeTag = '';
-        setTagInUrl('');
-        renderPostsOptimized(sortByRandom(allPosts));
-      });
-
-      document.querySelector('.filterTab button:nth-child(2)').addEventListener('click', () => {
-        activeTag = '';
-        setTagInUrl('');
-        renderPostsOptimized(sortByNewest(allPosts));
-      });
-
-      document.querySelector('.filterTab button:nth-child(3)').addEventListener('click', () => {
-        activeTag = '';
-        setTagInUrl('');
-        renderPostsOptimized(sortByOldest(allPosts));
-      });
-
-      document.querySelector('.filterTab button:nth-child(4)').addEventListener('click', async () => {
-        activeTag = '';
-        setTagInUrl('');
-        const container = document.querySelector('.PostLoadedArea');
-        try {
-          const resp = await fetch('./video/favoriteVideos.json');
-          if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
-          const favs = await resp.json();
-          if (!Array.isArray(favs) || favs.length === 0) {
-            container.innerHTML = `<div class="noPosts">No favorites yet.</div>`;
-            return;
-          }
-          const favSet = new Set(favs);
-          const filtered = allPosts.filter(p => favSet.has(p.PUID));
-          if (filtered.length === 0) {
-            container.innerHTML = `<div class="noPosts">No favorite posts found.</div>`;
-            return;
-          }
-          renderPostsOptimized(sortByNewest(filtered));
-        } catch (error) {
-          console.error('Favorites fetch error:', error.message || error);
-          container.innerHTML = `<div class="noPosts">Error loading favorites. Please try again later.</div>`;
-        }
-      });
-
-      document.querySelector('.filterTab button:nth-child(5)').addEventListener('click', () => {
-        activeTag = '';
-        setTagInUrl('');
-        renderPlaylistsHub();
-      });
-
-      document.querySelector('.PostLoadedArea').addEventListener('click', (event) => {
-        const playlistPlay = event.target.closest('.playlist-play');
-        if (playlistPlay) {
-          event.preventDefault();
-          const rawTag = decodeURIComponent(playlistPlay.dataset.tag || '');
-          playPlaylist(rawTag);
-          return;
-        }
-
-        const playlistView = event.target.closest('.playlist-view');
-        if (playlistView) {
-          event.preventDefault();
-          const rawTag = decodeURIComponent(playlistView.dataset.tag || '');
-          applyTagFilter(rawTag);
-          return;
-        }
-
-        const target = event.target.closest('.tag-chip');
-        if (!target) return;
-        event.preventDefault();
-        const rawTag = decodeURIComponent(target.dataset.tag || '');
-        applyTagFilter(rawTag);
-      });
-    }
-
-    function applyTagFilter(tag) {
-      const normalized = normalizeTag(tag);
-      const container = document.querySelector('.PostLoadedArea');
-
-      if (!normalized) {
-        activeTag = '';
-        setTagInUrl('');
-        renderPostsOptimized(sortByNewest(allPosts));
-        return;
-      }
-
-      activeTag = normalized;
-      setTagInUrl(normalized);
-
-      const filtered = allPosts.filter(post => {
-        const tags = getPostTags(post).map(normalizeTag);
-        return tags.includes(normalized);
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="noPosts">No videos found for #${normalized}.</div>`;
-        return;
-      }
-
-      renderPostsOptimized(sortByNewest(filtered));
-    }
-
-    function decodeHTMLEntities(text) {
-      const textArea = document.createElement('textarea');
-      textArea.innerHTML = text;
-      return textArea.value;
-    }
-
-    function toggleSpinner() {
-      const spinner = document.querySelector('#spinner');
-      spinner.style.display = spinner.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    function togglePageFiltertab() {
-      const pageFiltertab = document.querySelector('.pageFiltertab');
-      pageFiltertab.style.display = pageFiltertab.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    function toggleUploadtab() {
-      const uploadMenu = document.querySelector('.uploadMenu');
-      uploadMenu.style.display = uploadMenu.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    function fetchAndLoadPosts() {
-      Promise.all([
-        fetch('./video/posts.json').then(response => {
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          return response.json();
-        }),
-        fetch(tagsEndpoint)
-          .then(response => response.ok ? response.json() : { success: true, tagsMap: {} })
-          .catch(() => ({ success: true, tagsMap: {} }))
-      ])
-        .then(([postData, tagsData]) => {
-          tagsMap = tagsData && tagsData.success && tagsData.tagsMap ? tagsData.tagsMap : {};
-          loadPosts(postData);
-          setupFilterButtons();
-        })
-        .catch(error => {
-          console.error("Fetch error:", error.message);
-          const container = document.querySelector('.PostLoadedArea');
-          if (container) {
-            container.innerHTML = `<div class="noPosts">Error loading posts. Please try again later.</div>`;
-          }
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      ensureTagStyles();
-      activeTag = normalizeTag(new URLSearchParams(window.location.search).get('tag') || '');
-      fetchAndLoadPosts();
-    });
-  </script>
+document.addEventListener('DOMContentLoaded', () => {
+  ensureTagStyles();
+  activeTag = normalizeTag(new URLSearchParams(window.location.search).get('tag') || '');
+  fetchAndLoadPosts();
+});
+</script>
 
 </body>
 
