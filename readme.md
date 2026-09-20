@@ -69,9 +69,11 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    ```bash
    cd /var/www/html
    sudo git clone https://github.com/DotRYOT/videoArchiver.git Media-Hoard
-   sudo chown -R www-data:www-data Media-Hoard
+   sudo chown -R http:http Media-Hoard
    sudo chmod -R 755 Media-Hoard
    ```
+
+   CachyOS uses the `http` Apache user. If Apache is configured with a different `User`, use that account instead.
 
 3. Enable PHP extensions if needed:
 
