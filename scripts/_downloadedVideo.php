@@ -72,34 +72,65 @@ if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
 $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 $ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
 
-// Check for ffmpeg in scripts folder or system PATH
+// Check for ffmpeg in multiple locations
 $ffmpegPath = null;
+
+// First, check if ffmpeg exists in scripts folder
 if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
   $ffmpegPath = __DIR__ . '/' . $ffmpegExe;
 } else {
-  // Search in system PATH
-  if ($isWindows) {
-    $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
-    if ($whereOutput && trim($whereOutput) !== '') {
-      $paths = explode("\n", trim($whereOutput));
-      foreach ($paths as $path) {
-        $path = trim($path);
-        if (file_exists($path)) {
-          $ffmpegPath = $path;
-          break;
+  // Try common absolute paths first (faster and more reliable)
+  $commonPaths = [
+    '/usr/bin/ffmpeg',
+    '/usr/local/bin/ffmpeg',
+    '/bin/ffmpeg',
+    '/snap/bin/ffmpeg'
+  ];
+  
+  foreach ($commonPaths as $path) {
+    if (file_exists($path) && is_executable($path)) {
+      $ffmpegPath = $path;
+      break;
+    }
+  }
+  
+  // If not found in common paths, search in system PATH
+  if (!$ffmpegPath) {
+    if ($isWindows) {
+      $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
+      if ($whereOutput && trim($whereOutput) !== '') {
+        $paths = explode("\n", trim($whereOutput));
+        foreach ($paths as $path) {
+          $path = trim($path);
+          if (file_exists($path)) {
+            $ffmpegPath = $path;
+            break;
+          }
         }
       }
-    }
-  } else {
-    $whichOutput = shell_exec('which ' . $ffmpegExe . ' 2>/dev/null');
-    if ($whichOutput && trim($whichOutput) !== '') {
-      $ffmpegPath = trim($whichOutput);
+    } else {
+      // Use full path to which command and capture stderr
+      $whichOutput = shell_exec('/usr/bin/which ' . escapeshellarg($ffmpegExe) . ' 2>/dev/null');
+      if ($whichOutput && trim($whichOutput) !== '') {
+        $ffmpegPath = trim($whichOutput);
+      }
+      
+      // Final fallback: try executing ffmpeg directly to verify it exists
+      if (!$ffmpegPath) {
+        $testOutput = shell_exec(escapeshellarg($ffmpegExe) . ' -version 2>&1 | head -1');
+        if ($testOutput && strpos($testOutput, 'ffmpeg version') !== false) {
+          $ffmpegPath = $ffmpegExe; // Use command name directly, let exec() find it in PATH
+        }
+      }
     }
   }
 }
 
 if (!$ffmpegPath || !file_exists($ffmpegPath)) {
-  die("ffmpeg not found. Please install it first.");
+  // Additional debug: log what we tried
+  error_log("FFmpeg search failed. Tried: scripts folder, /usr/bin/ffmpeg, /usr/local/bin/ffmpeg, which command");
+  error_log("PHP OS: " . PHP_OS . ", isWindows: " . ($isWindows ? 'true' : 'false'));
+  die("ffmpeg not found. Please install it first. Location: /usr/bin/ffmpeg");
 }
 
 $filterString = "scale={$thumbWidth}:{$thumbHeight}:force_original_aspect_ratio=1,pad={$thumbWidth}:{$thumbHeight}:(ow-iw)/2:(oh-ih)/2";
@@ -113,14 +144,26 @@ if ($isWindows) {
   $thumbnailCommand .= '-vf "' . $filterString . '" ';
   $thumbnailCommand .= '-vframes 1 "' . $framePathFwd . '" 2>&1';
 } else {
-  // Linux/Unix: use escapeshellarg for proper argument escaping
+  // Linux/Unix: use absolute path for ffmpeg to avoid PATH issues
+  // Always use the full path we found earlier
   $thumbnailCommand = escapeshellarg($ffmpegPath) . ' -ss ' . $frameTime . ' -i ' . escapeshellarg($uploadVideoPath) . ' ';
   $thumbnailCommand .= '-vf ' . escapeshellarg($filterString) . ' ';
   $thumbnailCommand .= '-vframes 1 ' . escapeshellarg($frameFilePath) . ' 2>&1';
+  
+  // Log the command for debugging
+  error_log("FFmpeg command: " . $thumbnailCommand);
 }
 
-// Execute the command
-exec($thumbnailCommand, $output, $returnVar);
+// Execute the command with explicit PATH environment variable
+if (!$isWindows) {
+  // Set up environment with proper PATH for Linux
+  $env = [
+    'PATH' => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  ];
+  exec($thumbnailCommand, $output, $returnVar, $env);
+} else {
+  exec($thumbnailCommand, $output, $returnVar);
+}
 
 if ($returnVar !== 0) {
   error_log("Thumbnail generation failed: " . implode("\n", $output));
