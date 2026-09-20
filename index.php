@@ -51,16 +51,36 @@ require_once './scripts/_inc.php';
   }
   
   if (!$ytDlpFound) {
+    // Detect OS for specific install instructions
+    $isArch = file_exists('/etc/arch-release');
+    $isDebian = file_exists('/etc/debian_version');
+    $isFedora = file_exists('/etc/fedora-release');
+    $osName = 'Linux';
+    $installCmd = '';
+    
+    if ($isArch) {
+      $osName = 'Arch/CachyOS';
+      $installCmd = 'sudo pacman -S yt-dlp';
+    } elseif ($isDebian) {
+      $osName = 'Debian/Ubuntu';
+      $installCmd = 'sudo apt install yt-dlp';
+    } elseif ($isFedora) {
+      $osName = 'Fedora';
+      $installCmd = 'sudo dnf install yt-dlp';
+    } else {
+      $installCmd = 'sudo package-manager install yt-dlp';
+    }
     ?>
     <div class="updateAlert">
       <span class="gicon" title="Update a program">help</span>
-      <h2>Do you want to update/install YT-DLP?</h2>
-      <div class="answer">
-        <a href="./scripts/updates/_updateYTDLP.php">
-          <span class="gicon">check_circle</span>
-        </a>
-        <a href="./">
-          <span class="gicon">cancel</span>
+      <h2>yt-dlp is required to download videos from YouTube</h2>
+      <p style="margin: 10px 0; color: #ccc;">Please install yt-dlp using your terminal:</p>
+      <code style="display: block; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace;"><?= htmlspecialchars($installCmd) ?></code>
+      <p style="font-size: 13px; color: #999;">Detected OS: <?= htmlspecialchars($osName) ?></p>
+      <div class="answer" style="margin-top: 15px;">
+        <a href="./" style="background: #4CAF50;">
+          <span class="gicon">refresh</span>
+          <span>I've installed it - Refresh</span>
         </a>
       </div>
     </div>
