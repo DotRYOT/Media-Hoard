@@ -48,6 +48,20 @@ if (json_last_error() !== JSON_ERROR_NONE) {
   die("Invalid JSON in config file.");
 }
 
+// Define temp directory path
+$tempVideosDir = __DIR__ . '/temp/videos';
+
+// Ensure temp/videos directory exists with proper permissions
+if (!is_dir($tempVideosDir)) {
+  if (!mkdir($tempVideosDir, 0755, true)) {
+    uploadErrorResponse("Failed to create temp directory. Check permissions.", $isAjaxRequest);
+  }
+  // Set proper permissions on Linux/Unix systems
+  if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+    chmod($tempVideosDir, 0755);
+  }
+}
+
 // Check if a file was uploaded
 if (!isset($_FILES['videos']) || $_FILES['videos']['error'] !== UPLOAD_ERR_OK) {
   $error = "File upload error.";
@@ -75,20 +89,18 @@ if (strpos($mimeType, 'video/') !== 0) {
 
 // Generate random filename
 $randNumber = randStringGen(16, 'numbers');
-$outputFileName = './temp/videos/' . $randNumber . '.' . $videoExtension;
+$outputFileName = $tempVideosDir . '/' . $randNumber . '.' . $videoExtension;
 
-// Move uploaded file to desired location and convert if needed
-if ($videoExtension === 'mp4') {
-  // If same format, just move the file
-  if (!move_uploaded_file($tmpName, $outputFileName)) {
-    $error = "Failed to move uploaded file.";
-    uploadErrorResponse($error, $isAjaxRequest);
-  }
-} else {
-  if (!move_uploaded_file($tmpName, $outputFileName)) {
-    $error = "Failed to process uploaded file.";
-    uploadErrorResponse($error, $isAjaxRequest);
-  }
+// Move uploaded file to desired location
+if (!move_uploaded_file($tmpName, $outputFileName)) {
+  $error = "Failed to move uploaded file. Check directory permissions.";
+  error_log("Video upload failed: Could not move $tmpName to $outputFileName");
+  uploadErrorResponse($error, $isAjaxRequest);
+}
+
+// Set proper permissions on the uploaded file (Linux/Unix)
+if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+  chmod($outputFileName, 0644);
 }
 
 // Use original filename as title for download

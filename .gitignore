@@ -1,52 +1,88 @@
-```
-# Environment
-.env
-.env.local
-*.env.*
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+pip-log.txt
+pip-selfcheck.json
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*
 
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# PHP related
-*.php~
+# OS generated files
+.DS_Store
+Thumbs.db
 
-# Cache and temporary directories
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.class
-*.o
-*.obj
-*.so
-*.dll
-*.exe
-*.out
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# Build artifacts
+# Distribution / packaging
 dist/
 build/
-target/
-*.jar
-*.war
-*.ear
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Pytest cache
+.pytest_cache/
+
+# Mypy cache
+.mypy_cache/
+
+# Compressed files
 *.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
 *.tar.gz
 *.tar.bz2
 *.tar.xz
+*.tar.zst
 
-# Dependencies
-node_modules/
-vendor/
-*.lock
+# PHP specific
+*.php~
+*.php.bak
+*.php.swp
 
-# OS specific
-.DS_Store
-Thumbs.db
-```
+# Video/image temporary files (if not part of source)
+*.tmp
+*.temp
+*.part
+
+# Download related temporary files
+*_downloadedVideo.php
+*_downloader.php
+*_uploader.php
