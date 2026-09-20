@@ -27,7 +27,30 @@ require_once './scripts/_inc.php';
   displayMessage();
 
   // Check to see if the user wants to download yt-dlp automatically
-  if (!file_exists("./scripts/yt-dlp.exe")) {
+  // Cross-platform check: look in scripts folder OR system PATH
+  $ytDlpFound = false;
+  $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+  $ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
+  
+  // Check in scripts folder
+  if (file_exists("./scripts/" . $ytdlpExe)) {
+    $ytDlpFound = true;
+  } else {
+    // Check in system PATH
+    if ($isWindows) {
+      $whereOutput = shell_exec('where ' . escapeshellarg($ytdlpExe) . ' 2>nul');
+      if ($whereOutput && trim($whereOutput) !== '') {
+        $ytDlpFound = true;
+      }
+    } else {
+      $whichOutput = shell_exec('which ' . escapeshellarg($ytdlpExe) . ' 2>/dev/null');
+      if ($whichOutput && trim($whichOutput) !== '') {
+        $ytDlpFound = true;
+      }
+    }
+  }
+  
+  if (!$ytDlpFound) {
     ?>
     <div class="updateAlert">
       <span class="gicon" title="Update a program">help</span>

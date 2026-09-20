@@ -29,17 +29,22 @@ $videoTitle = preg_replace(
   $_GET['title']
 );
 
-// Define paths
+// Define paths (use absolute paths for ffmpeg compatibility)
 $FileUrl = $_GET['url'];
-$FilePath = "./temp/videos/" . $FileUrl;
+$FilePath = __DIR__ . "/temp/videos/" . $FileUrl;
 $newVideoName = "file_{$PUID}.{$videoExtension}";
-$uploadVideoPath = "../video/{$PUID}/{$newVideoName}";
+$uploadVideoPath = __DIR__ . "/../video/{$PUID}/{$newVideoName}";
 
 $frameFileName = "frame_{$PUID}.jpg";
-$frameFilePath = "../video/{$PUID}/{$frameFileName}";
+$frameFilePath = __DIR__ . "/../video/{$PUID}/{$frameFileName}";
 
-if (!is_dir("../video/{$PUID}/")) {
-  mkdir("../video/{$PUID}/", 0777, true);
+if (!is_dir(dirname($uploadVideoPath))) {
+  mkdir(dirname($uploadVideoPath), 0755, true);
+}
+
+// Ensure proper permissions on Linux
+if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+  chmod(dirname($uploadVideoPath), 0755);
 }
 
 // Attempt to move the video file
