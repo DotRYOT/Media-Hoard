@@ -727,11 +727,11 @@ $openMediaTab = $config["openMediaTab"];
     function fetchAndLoadPosts() {
       setFeedStatus('Loading images...');
       Promise.all([
-        fetch('./imageFiles/images.json').then(response => {
+        fetch('./imageFiles/images.json', { cache: 'no-store' }).then(response => {
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           return response.json();
         }),
-        fetch(categoriesEndpoint)
+        fetch(categoriesEndpoint, { cache: 'no-store' })
           .then(response => response.ok ? response.json() : { success: true, categoriesMap: {} })
           .catch(() => ({ success: true, categoriesMap: {} }))
       ])
