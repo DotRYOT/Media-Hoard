@@ -35,7 +35,7 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
 
    ```bash
    cd path/to/htdocs
-   git clone https://github.com/DotRYOT/videoArchiver.git Media-Hoard
+   git clone https://github.com/DotRYOT/Media-Hoard.git Media-Hoard
    ```
 
 3. Install FFmpeg (Windows example):
