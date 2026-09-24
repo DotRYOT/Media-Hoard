@@ -29,9 +29,9 @@ if (json_last_error() !== JSON_ERROR_NONE) {
   die("Invalid JSON in config file.");
 }
 
-$maxFiles = isset($config['maxFiles']) ? (int) $config['maxFiles'] : 20;
+$maxFiles = isset($config['maxFiles']) ? (int) $config['maxFiles'] : 100;
 if ($maxFiles < 1) {
-  $maxFiles = 20;
+  $maxFiles = 100;
 }
 
 // Make sure upload directory exists

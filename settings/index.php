@@ -183,8 +183,8 @@ try {
         <input type="checkbox" id="openMediaTab" name="openMediaTab" value="true" <?= $config['openMediaTab'] === 'true' ? 'checked' : '' ?>>
       </div>
       <div class="settingsRow">
-        <p>Max Image Uploads Per Request <span>Default: 20</span></p>
-        <input type="number" id="maxFiles" name="maxFiles" min="1" value="<?= isset($config['maxFiles']) ? $config['maxFiles'] : '20' ?>">
+        <p>Max Image Uploads Per Request <span>Default: 100</span></p>
+        <input type="number" id="maxFiles" name="maxFiles" min="1" value="<?= isset($config['maxFiles']) ? $config['maxFiles'] : '100' ?>">
       </div>
       <button type="submit">Save</button>
     </form>

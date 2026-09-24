@@ -243,7 +243,7 @@ If you see `PHP Zip extension is required for non-git updates`, enable it in XAM
 | `thumbHeight` | `360` | Generated thumbnail height in pixels. |
 | `videoExtension` | `mp4` | File extension used for downloaded/processed videos. |
 | `openMediaTab` | `false` | Whether media opens in a new tab by default. |
-| `maxFiles` | `20` | Maximum number of images allowed per upload request. |
+| `maxFiles` | `100` | Maximum number of images allowed per upload request. |
 
 ## Stack
 

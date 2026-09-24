@@ -5,7 +5,7 @@ $thumbWidth = $_POST['thumbWidth'];
 $thumbHeight = $_POST['thumbHeight'];
 $videoExtension = $_POST['videoExtension'];
 $openMediaTab = isset($_POST['openMediaTab']) ? 'true' : 'false';
-$maxFilesInput = isset($_POST['maxFiles']) ? (int) $_POST['maxFiles'] : 20;
+$maxFilesInput = isset($_POST['maxFiles']) ? (int) $_POST['maxFiles'] : 100;
 $maxFiles = max(1, $maxFilesInput);
 
 $configFile = __DIR__ . '/../../config.json';

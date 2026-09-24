@@ -4,5 +4,5 @@
     "thumbHeight": "360",
     "videoExtension": "mp4",
     "openMediaTab": "true",
-    "maxFiles": "20"
+    "maxFiles": "100"
 }
