@@ -135,50 +135,68 @@ $openMediaTab = $config["openMediaTab"];
 
       $('#localImageUpload').on('submit', function (e) {
         e.preventDefault();
-        const formData = new FormData(this);
+        const files = Array.from($('#fileUpload')[0].files || []);
+        const category = $('#categoryInput').val();
+        const batchSize = 20;
 
-        $.ajax({
-          url: '../scripts/_imgUploader.php',
-          type: 'POST',
-          data: formData,
-          processData: false,
-          contentType: false,
-          dataType: 'json',
-          xhr: function () {
-            const xhr = $.ajaxSettings.xhr();
-            if (xhr.upload) {
-              xhr.upload.addEventListener('progress', function (event) {
-                if (!event.lengthComputable) return;
-                const percent = Math.round((event.loaded / event.total) * 100);
-                setImageUploadProgress(percent);
-              });
-            }
-            return xhr;
-          },
-          beforeSend: function () {
-            $('#status').text('Uploading...');
-            $('#imageUploadProgressWrap').show();
-            setImageUploadProgress(0);
-          },
-          success: function (data) {
-            $('#status').text(data.message || 'Upload complete.');
-            setImageUploadProgress(100);
+        if (files.length === 0) {
+          $('#status').text('Please select at least one image.');
+          return;
+        }
 
-            if (data.success) {
-              fetchAndLoadPosts();
-              $('#fileUpload').val('');
-              $('#fileNameDisplay').text('No file selected');
-              $('#categoryInput').val('');
+        $('#status').text('Uploading...');
+        $('#imageUploadProgressWrap').show();
+        setImageUploadProgress(0);
+
+        (async function uploadBatches() {
+          let uploadedCount = 0;
+
+          for (let start = 0; start < files.length; start += batchSize) {
+            const batch = files.slice(start, start + batchSize);
+            const formData = new FormData();
+            batch.forEach(file => formData.append('images[]', file, file.name));
+            if (category) formData.append('category', category);
+
+            const data = await $.ajax({
+              url: '../scripts/_imgUploader.php',
+              type: 'POST',
+              data: formData,
+              processData: false,
+              contentType: false,
+              dataType: 'json',
+              xhr: function () {
+                const xhr = $.ajaxSettings.xhr();
+                if (xhr.upload) {
+                  xhr.upload.addEventListener('progress', function (event) {
+                    if (!event.lengthComputable) return;
+                    const batchProgress = event.loaded / event.total;
+                    const overallProgress = ((uploadedCount + batchProgress * batch.length) / files.length) * 100;
+                    setImageUploadProgress(Math.round(overallProgress));
+                  });
+                }
+                return xhr;
+              }
+            });
+
+            if (!data.success) {
+              throw new Error(data.message || 'Upload failed.');
             }
-          },
-          error: function (jqXHR) {
-            const response = jqXHR.responseJSON;
-            const message = response && response.message ? response.message : 'Upload failed.';
-            $('#status').text(message);
-          },
-          complete: function () {
-            setTimeout(resetImageUploadProgress, 700);
+
+            uploadedCount += batch.length;
+            setImageUploadProgress(Math.round((uploadedCount / files.length) * 100));
+            $('#status').text(`Uploaded ${uploadedCount} of ${files.length} images...`);
           }
+
+          $('#status').text(`Uploaded ${uploadedCount} images successfully.`);
+          fetchAndLoadPosts();
+          $('#fileUpload').val('');
+          $('#fileNameDisplay').text('No file selected');
+          $('#categoryInput').val('');
+          setImageUploadProgress(100);
+        })().catch(function (error) {
+          $('#status').text(error.message || 'Upload failed.');
+        }).finally(function () {
+          setTimeout(resetImageUploadProgress, 700);
         });
       });
     });
