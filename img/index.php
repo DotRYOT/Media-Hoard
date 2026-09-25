@@ -81,8 +81,9 @@ $openMediaTab = $config["openMediaTab"];
         </div>
         <input type="file" name="images[]" id="fileUpload" accept="image/*" multiple required style="display: none;">
         <div style="margin-top: 10px;">
-          <input type="text" name="category" id="categoryInput" placeholder="Category/Person name (optional)"
+          <input type="text" name="category" id="categoryInput" list="categorySuggestions" placeholder="Category/Person name (optional)"
             style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+          <datalist id="categorySuggestions"></datalist>
           <small style="color: #888;">Separate multiple with commas</small>
         </div>
         <button type="submit" name="upload">Upload</button>
@@ -742,6 +743,24 @@ $openMediaTab = $config["openMediaTab"];
       uploadMenu.style.display = uploadMenu.style.display === 'none' ? 'flex' : 'none';
     }
 
+    function updateCategorySuggestions() {
+      const datalist = document.getElementById('categorySuggestions');
+      if (!datalist) return;
+
+      const categories = new Map();
+      Object.values(categoriesMap || {}).flat().forEach(category => {
+        const name = String(category || '').trim();
+        const key = name.toLowerCase();
+        if (name && !categories.has(key)) categories.set(key, name);
+      });
+
+      datalist.replaceChildren(...Array.from(categories.values()).sort((a, b) => a.localeCompare(b)).map(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        return option;
+      }));
+    }
+
     function fetchAndLoadPosts() {
       setFeedStatus('Loading images...');
       Promise.all([
@@ -755,6 +774,7 @@ $openMediaTab = $config["openMediaTab"];
       ])
         .then(([postData, categoriesData]) => {
           categoriesMap = categoriesData && categoriesData.success && categoriesData.categoriesMap ? categoriesData.categoriesMap : {};
+          updateCategorySuggestions();
           loadPosts(postData);
           setupFilterButtons();
         })
