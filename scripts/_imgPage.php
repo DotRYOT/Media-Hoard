@@ -282,9 +282,8 @@ $ImageFilePath = $_GET['filePath'];
   </script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('../../sw.js')
-          .catch(err => console.warn('[SW] Registration failed:', err));
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => registration.unregister());
       });
     }
   </script>

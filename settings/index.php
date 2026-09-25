@@ -9,10 +9,17 @@ $ytdlpVersion = getYtDlpVersion();
 $isZipAvailable = class_exists('ZipArchive');
 
 $videojsonFilePath = __DIR__ . "/../video/posts.json";
-$cacheFilePath = __DIR__ . "/../cache/video_count.cache";
+$totalVideos = 0;
 
 try {
-  $totalVideos = countVideosWithCache($videojsonFilePath, $cacheFilePath);
+  if (!file_exists($videojsonFilePath)) {
+    throw new Exception("JSON file not found at path: " . $videojsonFilePath);
+  }
+  $videos = json_decode(file_get_contents($videojsonFilePath), true);
+  if (json_last_error() !== JSON_ERROR_NONE || !is_array($videos)) {
+    throw new Exception("Error decoding JSON: " . json_last_error_msg());
+  }
+  $totalVideos = count($videos);
 } catch (Exception $e) {
   echo "Error: " . $e->getMessage();
 }

@@ -29,8 +29,7 @@ foreach ([
   $root . '/video',
   $root . '/scripts/temp',
   $root . '/img/imageFiles',
-  $root . '/scripts/temp/videos',
-  $root . '/cache'
+  $root . '/scripts/temp/videos'
 ] as $directory) {
   setupDirectory($directory);
 }
@@ -40,7 +39,7 @@ setupFile($root . '/img/imageFiles/images.json', json_encode([]));
 
 // Ensure proper permissions on Linux/Unix systems
 if (!$isWindows) {
-  foreach ([$root . '/video', $root . '/scripts/temp', $root . '/scripts/temp/videos', $root . '/img/imageFiles', $root . '/cache'] as $directory) {
+  foreach ([$root . '/video', $root . '/scripts/temp', $root . '/scripts/temp/videos', $root . '/img/imageFiles'] as $directory) {
     chmod($directory, 0755);
   }
   chmod($root . '/video/posts.json', 0644);

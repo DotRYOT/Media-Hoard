@@ -788,16 +788,9 @@ $openMediaTab = $config["openMediaTab"];
   </script>
 
   <script>
-    // Register service worker for offline support (Google Workbox)
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('../sw.js')
-          .then(reg => {
-            console.log('[SW] Registered, scope:', reg.scope);
-          })
-          .catch(err => {
-            console.warn('[SW] Registration failed:', err);
-          });
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => registration.unregister());
       });
     }
   </script>

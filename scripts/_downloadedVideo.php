@@ -232,12 +232,6 @@ if (file_put_contents($json_file, $json_data) === false) {
   die("Failed to write to JSON file. Check permissions.");
 }
 
-// Delete the cache file
-$cacheFile = __DIR__ . '/../cache/video_count.cache';
-if (file_exists($cacheFile)) {
-  unlink($cacheFile);
-}
-
 // Redirect to success page
 $success = generateMessageUrl("New Video Posted", 'success');
 header("Location: ../../$success");

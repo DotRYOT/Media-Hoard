@@ -309,12 +309,6 @@ $posts[] = [
 
 file_put_contents($jsonFile, json_encode($posts, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
-// Clear video count cache
-$cacheFile = __DIR__ . '/../cache/video_count.cache';
-if (file_exists($cacheFile)) {
-  unlink($cacheFile);
-}
-
 // Clean up progress file
 if (file_exists($progressFile)) {
   unlink($progressFile);

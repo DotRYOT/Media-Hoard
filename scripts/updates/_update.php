@@ -145,8 +145,7 @@ function shouldSkipPath($relativePath)
     '.git/',
     'video/',
     'img/imageFiles/',
-    'scripts/temp/',
-    'cache/'
+    'scripts/temp/'
   ];
 
   $protectedFiles = [

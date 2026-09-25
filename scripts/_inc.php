@@ -327,23 +327,6 @@ function getYtDlpVersion($outputJson = false)
 
   return $response;
 }
-function countVideosWithCache($jsonFilePath, $cacheFilePath, $cacheTTL = 3600)
-{
-  if (file_exists($cacheFilePath) && (time() - filemtime($cacheFilePath)) < $cacheTTL) {
-    return (int) file_get_contents($cacheFilePath);
-  }
-  if (!file_exists($jsonFilePath)) {
-    throw new Exception("JSON file not found at path: " . $jsonFilePath);
-  }
-  $jsonContent = file_get_contents($jsonFilePath);
-  $videos = json_decode($jsonContent, true);
-  if (json_last_error() !== JSON_ERROR_NONE) {
-    throw new Exception("Error decoding JSON: " . json_last_error_msg());
-  }
-  $videoCount = count($videos);
-  file_put_contents($cacheFilePath, $videoCount);
-  return $videoCount;
-}
 function deleteDirectory($dir)
 {
   if (!is_dir($dir)) {

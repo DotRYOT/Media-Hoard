@@ -3,13 +3,9 @@
 require_once __DIR__ . '/../_inc.php';
 
 $videojsonFilePath = "../../video/posts.json";
-$cacheFilePath = "../../cache/video_count.cache";
 
 if (file_exists($videojsonFilePath)) {
   unlink($videojsonFilePath);
-}
-if (file_exists($cacheFilePath)) {
-  unlink($cacheFilePath);
 }
 
 $videoDir = "../../video";
