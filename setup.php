@@ -57,7 +57,7 @@ if (!file_exists($root . '/video/favoriteVideos.json')) {
   if (!copy($root . '/scripts/utility/favoriteVideos.json', $root . '/video/favoriteVideos.json')) {
     throw new RuntimeException('Unable to copy video favorites file. Check the project permissions.');
   }
-  if (!$isWindows) chmod($root . '/video/favoriteVideos.json', 0644);
+  if (!$isWindows) chmod($root . '/video/favoriteVideos.json', 0664);
 }
 
 if (!file_exists($root . '/video/tags.json')) {
@@ -71,7 +71,7 @@ if (!file_exists($root . '/img/favoriteImages.json')) {
   if (!copy($root . '/scripts/utility/favoriteImages.json', $root . '/img/favoriteImages.json')) {
     throw new RuntimeException('Unable to copy image favorites file. Check the project permissions.');
   }
-  if (!$isWindows) chmod($root . '/img/favoriteImages.json', 0644);
+  if (!$isWindows) chmod($root . '/img/favoriteImages.json', 0664);
 }
 
 if (!file_exists($root . '/img/categories.json')) {

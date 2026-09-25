@@ -2,7 +2,7 @@
 
 // This script handles the "favorite" action for an image. It receives a POST request with the image PUID and updates the favorites list accordingly.
 
-require "../_inc.php";
+require __DIR__ . '/../_inc.php';
 
 // Read raw POST body (expecting JSON)
 $raw = file_get_contents('php://input');

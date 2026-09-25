@@ -64,6 +64,7 @@ echo "Ensuring JSON files are writable..."
 chmod 664 "$BASE_DIR/video/posts.json" 2>/dev/null || true
 chmod 664 "$BASE_DIR/video/tags.json" 2>/dev/null || true
 chmod 664 "$BASE_DIR/video/favoriteVideos.json" 2>/dev/null || true
+chmod 664 "$BASE_DIR/img/favoriteImages.json" 2>/dev/null || true
 chmod 664 "$BASE_DIR/img/imageFiles/images.json" 2>/dev/null || true
 chmod 664 "$BASE_DIR/config.json" 2>/dev/null || true
 
