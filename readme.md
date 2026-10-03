@@ -110,9 +110,13 @@ Media Hoard is a local-first PHP media library for downloading, uploading, organ
    
    ```bash
    cd /var/www/html/Media-Hoard
-   sudo bash scripts/setup_permissions.sh
+   sudo bash setup_permissions.sh
    ```
-   
+
+   > **Note:** If you see errors like `$'\r': command not found` or a syntax
+   > error near `elif`, the script has Windows (CRLF) line endings. Fix it with:
+   > `sed -i 's/\r$//' setup_permissions.sh`
+
    This script will:
    - Create required directories (video/, img/imageFiles/, scripts/temp/videos/, cache/)
    - Set proper ownership for your web server user (http or nginx)
@@ -156,7 +160,7 @@ If you encounter permission errors when uploading videos or images:
 **Quick fix using the setup script (Recommended):**
 ```bash
 cd /var/www/html/Media-Hoard
-sudo bash scripts/setup_permissions.sh
+sudo bash setup_permissions.sh
 ```
 
 **Manual troubleshooting:**
