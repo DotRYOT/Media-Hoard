@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_tools.php';
+
 function randStringGen($length, $type = 'normal')
 {
   switch ($type) {
@@ -261,36 +263,19 @@ function downloadFile($fileUrl, $destinationPath)
 }
 function getYtDlpVersion($outputJson = false)
 {
-  // Cross-platform yt-dlp binary detection
+  // Cross-platform yt-dlp detection (shared, PATH-independent logic).
   $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-  $ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
-  
-  // Check for yt-dlp in scripts folder or system PATH
-  $YTDLP_PATH = null;
-  if (file_exists(__DIR__ . '/' . $ytdlpExe)) {
-    $YTDLP_PATH = __DIR__ . '/' . $ytdlpExe;
-  } else {
-    // Search in system PATH
-    if ($isWindows) {
-      $whereOutput = shell_exec('where ' . escapeshellarg($ytdlpExe) . ' 2>nul');
-      if ($whereOutput && trim($whereOutput) !== '') {
-        $YTDLP_PATH = trim(explode("\n", trim($whereOutput))[0]);
-      }
-    } else {
-      $whichOutput = shell_exec('which ' . escapeshellarg($ytdlpExe) . ' 2>/dev/null');
-      if ($whichOutput && trim($whichOutput) !== '') {
-        $YTDLP_PATH = trim($whichOutput);
-      }
-    }
-  }
+  $config    = loadAppConfig();
+  $ytDlp     = resolveYtDlp($isWindows, $config['ytDlpPath'] ?? null);
 
-  // Debug: Check if file exists
-  if (!$YTDLP_PATH || !file_exists($YTDLP_PATH)) {
+  if ($ytDlp['type'] === 'missing') {
+    error_log('yt-dlp lookup failed. Checked: ' . describeToolSearch($ytDlp['candidates'], 20));
     $response = [
       'version' => 'File not found',
-      'binary_path' => $YTDLP_PATH ?? 'not found',
+      'binary_path' => 'not found',
       'success' => false,
-      'error' => 'yt-dlp does not exist at the specified path'
+      'error' => 'yt-dlp is not reachable from the web server process. It may be installed for your user only (pip --user / pyenv / conda); install it system-wide ("sudo pacman -S yt-dlp") or set "ytDlpPath" in config.json.',
+      'checked' => $ytDlp['candidates']
     ];
 
     if ($outputJson) {
@@ -303,17 +288,15 @@ function getYtDlpVersion($outputJson = false)
   }
 
   // Run version command with cross-platform escaping
-  if ($isWindows) {
-    exec("\"$YTDLP_PATH\" --version", $output, $return_var);
-  } else {
-    exec(escapeshellarg($YTDLP_PATH) . ' --version', $output, $return_var);
-  }
+  $output     = [];
+  $return_var = -1;
+  exec($ytDlp['command'] . ' --version 2>&1', $output, $return_var);
 
   // Build response
   $response = [
-    'version' => $output[0] ?? 'Failed to get version',
+    'version' => trim($output[0] ?? 'Failed to get version'),
     'loaded' => ($return_var === 0) ? 'Loaded' : 'Error',
-    'binary_path' => $YTDLP_PATH,
+    'binary_path' => $ytDlp['source'],
     'exec_output' => $output,
     'exec_return_code' => $return_var,
     'success' => ($return_var === 0)

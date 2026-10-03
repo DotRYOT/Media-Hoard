@@ -85,7 +85,14 @@ try {
 
     <div class="settingsUpdateSection">
       <h3>Update YT-DLP</h3>
-      <p class="version">Current Version: <?= $ytdlpVersion['version']; ?></p>
+      <p class="version">Current Version: <?= htmlspecialchars($ytdlpVersion['version']); ?></p>
+      <?php if (empty($ytdlpVersion['success'])): ?>
+      <p class="version" style="color:#e57373;">
+        <?= htmlspecialchars($ytdlpVersion['error'] ?? 'yt-dlp not detected.'); ?>
+      </p>
+      <?php elseif (!empty($ytdlpVersion['binary_path'])): ?>
+      <p class="version" style="font-size:12px; color:#999;">Using: <?= htmlspecialchars($ytdlpVersion['binary_path']); ?></p>
+      <?php endif; ?>
       <button type="button" onclick="window.location.href='../scripts/updates/_updateYTDLP.php'">
         <span class="gicon">download</span>
         <p>Check for Updates</p>
@@ -193,8 +200,22 @@ try {
         <p>Max Image Uploads Per Request <span>Default: 100</span></p>
         <input type="number" id="maxFiles" name="maxFiles" min="1" value="<?= isset($config['maxFiles']) ? $config['maxFiles'] : '100' ?>">
       </div>
+      <div class="settingsRow">
+        <p>yt-dlp Path <span>Optional absolute path, e.g. /usr/bin/yt-dlp or ~/.local/bin/yt-dlp</span></p>
+        <input type="text" id="ytDlpPath" name="ytDlpPath" placeholder="/usr/bin/yt-dlp"
+          value="<?= htmlspecialchars($config['ytDlpPath'] ?? '') ?>">
+      </div>
+      <div class="settingsRow">
+        <p>ffmpeg Path <span>Optional absolute path, e.g. /usr/bin/ffmpeg</span></p>
+        <input type="text" id="ffmpegPath" name="ffmpegPath" placeholder="/usr/bin/ffmpeg"
+          value="<?= htmlspecialchars($config['ffmpegPath'] ?? '') ?>">
+      </div>
       <button type="submit">Save</button>
     </form>
+    <p style="font-size: 12px; color: #999; margin-top: 10px;">
+      Leave the paths empty to auto-detect. The web server cannot see your shell's PATH, so if yt-dlp is installed per-user
+      (<code>pip install --user</code>, pyenv, conda) put its full path here — run <code>readlink -f "$(which yt-dlp)"</code> in your terminal to get it.
+    </p>
   </div>
 
 </body>
