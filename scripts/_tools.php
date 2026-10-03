@@ -372,6 +372,60 @@ function resolveFfmpeg($isWindows, $configOverride = null)
 }
 
 /**
+ * Turn raw yt-dlp log output into a short, human-readable reason.
+ * Used by _downloader.php so the UI never shows a bare "Download failed".
+ */
+function explainYtDlpLog($log, $dlReturn = null)
+{
+  $clean = preg_replace('/\x1b\[[0-9;]*[A-Za-z]/', '', (string)$log); // strip ANSI colors
+  $lines = array_values(array_filter(array_map('trim', explode("\n", $clean)), function ($l) {
+    return $l !== '';
+  }));
+
+  // Collect every ERROR: line (yt-dlp prints one per failure).
+  $errors = [];
+  foreach ($lines as $line) {
+    if (preg_match('/^ERROR:\s*(.+)$/i', $line, $m)) {
+      $errors[] = trim($m[1]);
+    }
+  }
+
+  $reason = null;
+  if (!empty($errors)) {
+    $first = $errors[0];
+    if (stripos($first, 'sign in to confirm') !== false || stripos($first, 'not a bot') !== false) {
+      $reason = 'YouTube blocked this server IP ("Sign in to confirm you\'re not a bot"). This is common on VPS/cloud IPs and VPNs. Fix: use a residential connection, or pass cookies - e.g. export cookies.txt from a logged-in browser and set "cookies" in config.json, or run yt-dlp --cookies-from-browser once as the web server user.';
+    } elseif (preg_match('/age restricted|confirm your age/i', $first)) {
+      $reason = 'This video is age-restricted and needs YouTube cookies to download. Set "cookies" in config.json to an exported cookies.txt file.';
+    } elseif (preg_match('/Private video/i', $first)) {
+      $reason = 'The video is private and cannot be downloaded.';
+    } elseif (preg_match('/Video unavailable|no longer available/i', $first)) {
+      $reason = 'The video is unavailable (removed, region-locked, or a bad link).';
+    } elseif (preg_match('/HTTP Error 4\d\d/', $first, $hm)) {
+      $reason = 'YouTube rejected the request (' . $hm[0] . '). Try again later or provide cookies via "cookies" in config.json.';
+    } elseif (preg_match('/getaddrinfo failed|unable to download webpage|network|timed out|connection/i', $first)) {
+      $reason = 'Network error while contacting YouTube from the server: ' . substr($first, 0, 200);
+    } else {
+      $reason = substr($first, 0, 300);
+    }
+  }
+
+  if ($reason === null) {
+    if ($dlReturn === 127 || preg_match('/command not found/i', $clean)) {
+      $reason = 'yt-dlp could not be executed by the web server.';
+    } elseif (preg_match('/ffmpeg/i', $clean) && preg_match('/not found|No such file|is not a valid/i', $clean)) {
+      $reason = 'yt-dlp ran but ffmpeg is missing or unusable for merging. Install it with "sudo pacman -S ffmpeg" or set "ffmpegPath" in config.json.';
+    } elseif ($dlReturn === 143 || preg_match('/Terminated|SIGTERM/i', $clean)) {
+      $reason = 'The download was killed before finishing (out of time or memory). Raise max_execution_time/memory_limit and retry.';
+    } else {
+      $reason = !empty($lines) ? substr((string)end($lines), 0, 300) : 'Unknown yt-dlp failure (exit code ' . var_export($dlReturn, true) . ', empty log).';
+    }
+  }
+
+  return $reason;
+}
+
+/**
  * Human-readable hint for error messages / diagnostics.
  */
 function describeToolSearch($candidates, $limit = 6)
