@@ -27,27 +27,14 @@ href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wgh
 displayMessage();
 
 // Check to see if the user wants to download yt-dlp automatically
-// Cross-platform check: look in scripts folder OR system PATH
-$ytDlpFound = false;
+// Detection must not rely on `which`: the web server process has its own PATH
+// and cannot see user-level installs (pip --user, pyenv, conda, ...).
+require_once __DIR__ . '/scripts/_tools.php';
 $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-$ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
-
-// Check in scripts folder
-if (file_exists("./scripts/" . $ytdlpExe)) {
-  $ytDlpFound = true;
-} else {
-  // Check in system PATH (More robust than 'which' for PHP shell_exec)
-  // We try running the command with --version. If it returns output, it's installed.
-  $versionOutput = shell_exec(escapeshellarg($ytdlpExe) . ' --version 2>/dev/null');
-  if ($versionOutput && trim($versionOutput) !== '') {
-    $ytDlpFound = true;
-  } else {
-    // Fallback: explicit Arch/CachyOS path check
-    if (file_exists('/usr/bin/' . $ytdlpExe)) {
-      $ytDlpFound = true;
-    }
-  }
-}
+$appConfig = loadAppConfig();
+$ytDlpInfo = resolveYtDlp($isWindows, $appConfig['ytDlpPath'] ?? null);
+$ffmpegInfo = resolveFfmpeg($isWindows, $appConfig['ffmpegPath'] ?? null);
+$ytDlpFound = ($ytDlpInfo['type'] !== 'missing');
 
 if (!$ytDlpFound) {
   // Detect OS for specific install instructions
@@ -76,6 +63,12 @@ if (!$ytDlpFound) {
   <p style="margin: 10px 0; color: #ccc;">Please install yt-dlp using your terminal:</p>
   <code style="display: block; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace;"><?= htmlspecialchars($installCmd) ?></code>
   <p style="font-size: 13px; color: #999;">Detected OS: <?= htmlspecialchars($osName) ?></p>
+  <p style="font-size: 13px; color: #999; margin-top: 8px;">
+    Already installed but still not detected? The web server (http/nginx + PHP-FPM) does not use your shell's PATH, so user-level installs such as <code>pip install --user yt-dlp</code> (<code>~/.local/bin/yt-dlp</code>) are invisible to it. Either install it system-wide with the command above, run <code>python -m pip install --user yt-dlp</code> and set <code>"ytDlpPath"</code> in <code>config.json</code> to the absolute path, or let the app download its own copy from the settings page.
+  </p>
+  <?php if (!empty($ffmpegInfo['path']) || $ffmpegInfo['command'] !== '') { ?>
+  <p style="font-size: 13px; color: #999;">ffmpeg detected: <?= htmlspecialchars($ffmpegInfo['path'] ?? 'available') ?></p>
+  <?php } ?>
   <div class="answer" style="margin-top: 15px;">
   <a href="./" style="background: #4CAF50;">
   <span class="gicon">refresh</span>

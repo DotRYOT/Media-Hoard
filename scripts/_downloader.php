@@ -1,5 +1,6 @@
 <?php
 require "./_inc.php";
+require "./_tools.php";
 
 // Allow the download to run as long as needed
 set_time_limit(0);
@@ -77,62 +78,37 @@ if (is_array($existingPosts)) {
 
 // Cross-platform tool path detection
 $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-$ytdlpExe = $isWindows ? 'yt-dlp.exe' : 'yt-dlp';
-$ffmpegExe = $isWindows ? 'ffmpeg.exe' : 'ffmpeg';
 
-// Check for yt-dlp in scripts folder or system PATH
-$ytdlpPath = null;
-if (file_exists(__DIR__ . '/' . $ytdlpExe)) {
-  $ytdlpPath = __DIR__ . '/' . $ytdlpExe;
-} else {
-  // Search in system PATH
-  if ($isWindows) {
-    $whereOutput = shell_exec('where ' . escapeshellarg($ytdlpExe) . ' 2>nul');
-    if ($whereOutput && trim($whereOutput) !== '') {
-      $ytdlpPath = trim(explode("\n", trim($whereOutput))[0]);
-    }
-  } else {
-    $whichOutput = shell_exec('which ' . escapeshellarg($ytdlpExe) . ' 2>/dev/null');
-    if ($whichOutput && trim($whichOutput) !== '') {
-      $ytdlpPath = trim($whichOutput);
-    }
-  }
-}
+// Locate yt-dlp / ffmpeg robustly. The web server process does not inherit the
+// interactive shell's PATH, so a plain `which yt-dlp` often fails even when the
+// package is installed (pip --user, pyenv, conda, systemd PrivateUsers, ...).
+// resolveYtDlp() also falls back to `python -m yt_dlp`.
+$ytDlp = resolveYtDlp($isWindows, $config['ytDlpPath'] ?? null);
 
-if (!$ytdlpPath || !file_exists($ytdlpPath)) {
-  echo json_encode(['success' => false, 'message' => 'yt-dlp not found. Please install it first.']);
+if ($ytDlp['type'] === 'missing') {
+  error_log('yt-dlp lookup failed. Checked: ' . describeToolSearch($ytDlp['candidates'], 20));
+  echo json_encode([
+    'success' => false,
+    'message' => 'yt-dlp not found by the web server. If you installed it with "pip install --user yt-dlp" (or pyenv/conda), it lives in your user directory which the http/nginx service cannot see - either run "sudo pacman -S yt-dlp" for a system-wide install, set "ytDlpPath" in config.json to the absolute path of the binary, or use the "install/update yt-dlp" option in the app.',
+    'detail'  => 'Checked locations: ' . describeToolSearch($ytDlp['candidates']),
+  ]);
   exit;
 }
 
-$ffmpegPath = null;
-if (file_exists(__DIR__ . '/' . $ffmpegExe)) {
-  $ffmpegPath = __DIR__ . '/' . $ffmpegExe;
-} else {
-  // Search in system PATH
-  if ($isWindows) {
-    $whereOutput = shell_exec('where ' . escapeshellarg($ffmpegExe) . ' 2>nul');
-    if ($whereOutput && trim($whereOutput) !== '') {
-      $paths = explode("\n", trim($whereOutput));
-      foreach ($paths as $path) {
-        $path = trim($path);
-        if (file_exists($path)) {
-          $ffmpegPath = $path;
-          break;
-        }
-      }
-    }
-  } else {
-    $whichOutput = shell_exec('which ' . $ffmpegExe . ' 2>/dev/null');
-    if ($whichOutput && trim($whichOutput) !== '') {
-      $ffmpegPath = trim($whichOutput);
-    }
-  }
-}
+$ffmpeg = resolveFfmpeg($isWindows, $config['ffmpegPath'] ?? null);
 
-if (!$ffmpegPath || !file_exists($ffmpegPath)) {
-  echo json_encode(['success' => false, 'message' => 'ffmpeg not found. Please install it first.']);
+if ($ffmpeg['command'] === '') {
+  error_log('ffmpeg lookup failed. Checked: ' . describeToolSearch($ffmpeg['candidates'], 20));
+  echo json_encode([
+    'success' => false,
+    'message' => 'ffmpeg not found. Install it with "sudo pacman -S ffmpeg" (Arch) or set "ffmpegPath" in config.json to its absolute path.',
+    'detail'  => 'Checked locations: ' . describeToolSearch($ffmpeg['candidates']),
+  ]);
   exit;
 }
+
+$ytdlpPath = $ytDlp['source'];
+$ffmpegPath = $ffmpeg['path'];
 
 // Job ID for progress tracking (digits only)
 $jobId = preg_replace('/[^0-9]/', '', $_GET['jobId'] ?? '');
@@ -164,22 +140,31 @@ $tempId        = randStringGen(16, 'numbers');
 $tempVideoFile = $tempVideosDir . '/' . $tempId . '.' . $videoExtension;
 
 // Build yt-dlp command (forward slashes, double-quoted for Windows)
-$ytdlpFwd  = str_replace('\\', '/', $ytdlpPath);
+// $ytDlp['command'] is already shell-escaped and may be "python3 -m yt_dlp".
 $tempFwd   = str_replace('\\', '/', $tempVideoFile);
-$dlCommand = '"' . $ytdlpFwd . '"'
+$dlCommand = $ytDlp['command']
   . ' --newline'
   . ' --format "bestvideo[ext=' . $videoExtension . ']+bestaudio[ext=m4a]/bestvideo+bestaudio/best"'
   . ' --merge-output-format ' . $videoExtension
   . ' --output "' . $tempFwd . '"'
   . ' "' . $url . '"';
 
-// Run yt-dlp via proc_open so progress streams live to the progress file
+// Run yt-dlp via proc_open so progress streams live to the progress file.
+// Give the child an extended PATH so yt-dlp can find ffmpeg for merging/remuxing.
 $descriptorspec = [
   0 => ['pipe', 'r'],
   1 => ['file', $progressFile, 'w'],
   2 => ['file', $progressFile, 'a'],
 ];
-$process = proc_open($dlCommand, $descriptorspec, $pipes);
+$procEnv = null;
+if (!$isWindows) {
+  $extraDirs = [];
+  if (!empty($ffmpeg['path'])) {
+    $extraDirs[] = dirname($ffmpeg['path']);
+  }
+  $procEnv = ['PATH' => buildToolEnvPath($extraDirs)];
+}
+$process = proc_open($dlCommand, $descriptorspec, $pipes, null, $procEnv);
 $dlReturn = -1;
 if (is_resource($process)) {
   fclose($pipes[0]);
@@ -201,11 +186,22 @@ if (!file_exists($tempVideoFile)) {
 }
 
 if (!file_exists($tempVideoFile)) {
+  $logContent = file_exists($progressFile) ? (string)file_get_contents($progressFile) : '';
   if (file_exists($progressFile)) unlink($progressFile);
-  $logContent = file_exists($progressFile) ? file_get_contents($progressFile) : '';
+
+  // Surface the real yt-dlp error instead of a generic message.
+  $reason = 'Video download failed.';
+  if ($dlReturn === 127 || stripos($logContent, 'command not found') !== false) {
+    $reason = 'yt-dlp could not be executed by the web server (' . $ytDlp['source'] . ').';
+  } elseif (stripos($logContent, 'ffmpeg') !== false && preg_match('/not found|No such file/i', $logContent)) {
+    $reason = 'yt-dlp ran but ffmpeg is missing or unusable for merging.';
+  } elseif (preg_match('/^(ERROR:.*)$/m', $logContent, $m)) {
+    $reason = trim($m[1]);
+  }
+
   echo json_encode([
     'success' => false,
-    'message' => 'Video download failed. Check yt-dlp and the URL.',
+    'message' => $reason,
     'detail'  => $logContent,
   ]);
   exit;
