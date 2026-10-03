@@ -1,6 +1,6 @@
 <?php
-require "./_inc.php";
-require "./_tools.php";
+require "./_inc.php"; // already pulls in _tools.php via require_once
+require_once "./_tools.php";
 
 // Allow the download to run as long as needed
 set_time_limit(0);
@@ -139,6 +139,22 @@ file_put_contents($progressFile, '');
 $tempId        = randStringGen(16, 'numbers');
 $tempVideoFile = $tempVideosDir . '/' . $tempId . '.' . $videoExtension;
 
+// Optional YouTube cookies file (fixes "Sign in to confirm you're not a bot"
+// and age-restricted videos). Set "cookies" in config.json to the absolute
+// path of a Netscape-format cookies.txt exported from a logged-in browser.
+$cookieOpt = '';
+if (!empty($config['cookies'])) {
+  $cookiePath = $config['cookies'];
+  if (!$isWindows && $cookiePath[0] !== '/') {
+    $cookiePath = dirname(__DIR__) . '/' . $cookiePath; // allow project-relative paths
+  }
+  if (file_exists($cookiePath)) {
+    $cookieOpt = ' --cookies ' . ($isWindows ? '"' . str_replace('\\', '/', $cookiePath) . '"' : escapeshellarg($cookiePath));
+  } else {
+    error_log('cookies file configured but not found: ' . $cookiePath);
+  }
+}
+
 // Build yt-dlp command (forward slashes, double-quoted for Windows)
 // $ytDlp['command'] is already shell-escaped and may be "python3 -m yt_dlp".
 $tempFwd   = str_replace('\\', '/', $tempVideoFile);
@@ -146,6 +162,7 @@ $dlCommand = $ytDlp['command']
   . ' --newline'
   . ' --format "bestvideo[ext=' . $videoExtension . ']+bestaudio[ext=m4a]/bestvideo+bestaudio/best"'
   . ' --merge-output-format ' . $videoExtension
+  . $cookieOpt
   . ' --output "' . $tempFwd . '"'
   . ' "' . $url . '"';
 
@@ -190,19 +207,13 @@ if (!file_exists($tempVideoFile)) {
   if (file_exists($progressFile)) unlink($progressFile);
 
   // Surface the real yt-dlp error instead of a generic message.
-  $reason = 'Video download failed.';
-  if ($dlReturn === 127 || stripos($logContent, 'command not found') !== false) {
-    $reason = 'yt-dlp could not be executed by the web server (' . $ytDlp['source'] . ').';
-  } elseif (stripos($logContent, 'ffmpeg') !== false && preg_match('/not found|No such file/i', $logContent)) {
-    $reason = 'yt-dlp ran but ffmpeg is missing or unusable for merging.';
-  } elseif (preg_match('/^(ERROR:.*)$/m', $logContent, $m)) {
-    $reason = trim($m[1]);
-  }
+  $reason = explainYtDlpLog($logContent, $dlReturn);
+  error_log('yt-dlp download failed (exit ' . var_export($dlReturn, true) . "): \n" . $logContent);
 
   echo json_encode([
     'success' => false,
     'message' => $reason,
-    'detail'  => $logContent,
+    'detail'  => substr($logContent, -2000),
   ]);
   exit;
 }

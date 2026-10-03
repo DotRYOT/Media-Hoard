@@ -285,11 +285,22 @@ $(function () {
     $btn.prop('disabled', false).text('Download');
         }
       },
-      error: function (jqXHR) {
+      error: function (jqXHR, textStatus) {
         clearInterval(pollInterval);
-        const response = jqXHR.responseJSON;
-        const message = response && response.message ? response.message : 'Download failed. Please try again.';
-    $status.text('Error: ' + message);
+        let message;
+        if (jqXHR.status === 0) {
+          message = 'Connection to the server was lost before the download finished. The PHP execution time limit is probably too low - set max_execution_time to 0 (or a large value) in php.ini / the PHP-FPM pool and restart the web server.';
+        } else if (jqXHR.status === 404 || jqXHR.status === 403) {
+          message = 'The downloader script (' + jqXHR.status + ') could not be reached or executed by the web server. Check file permissions (see setup_permissions.sh) and your server rewrite rules.';
+        } else if (jqXHR.status >= 500) {
+          message = 'Server error ' + jqXHR.status + ' while downloading. Check the PHP error log for details.';
+        } else {
+          const response = jqXHR.responseJSON;
+          message = response && response.message ? response.message : 'Download failed (' + (textStatus || 'HTTP ' + jqXHR.status + ')').toUpperCase() + '. See the server\'s PHP error log for details.';
+        }
+        // Include the backend detail line when present - it contains the real yt-dlp error.
+        const detail = jqXHR.responseJSON && jqXHR.responseJSON.detail ? String(jqXHR.responseJSON.detail).slice(0, 300) : '';
+    $status.text('Error: ' + message + (detail ? ' - ' + detail : ''));
     $wrap.hide();
     $('#spinner').hide();
     $btn.prop('disabled', false).text('Download');
