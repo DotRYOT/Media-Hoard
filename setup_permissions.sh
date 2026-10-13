@@ -5,9 +5,9 @@
 # Detect web server user
 if id "http" &>/dev/null; then
     WEB_USER="http"
-elif id "nginx" &>/dev/null; then
+    elif id "nginx" &>/dev/null; then
     WEB_USER="nginx"
-elif id "www-data" &>/dev/null; then
+    elif id "www-data" &>/dev/null; then
     WEB_USER="www-data"
 else
     echo "Warning: Could not detect web server user. Defaulting to 'http' (Apache on Arch/CachyOS)"
