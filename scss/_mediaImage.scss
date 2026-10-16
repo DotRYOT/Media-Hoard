@@ -22,6 +22,7 @@
 
   .image-card {
     position: relative;
+    height: 100%;
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--bg-secondary);
@@ -58,7 +59,7 @@
       width: 100%;
       height: 100%;
       display: block;
-      object-fit: cover;
+      object-fit: contain;
       transition: transform var(--transition-slow);
       content-visibility: auto;
       contain-intrinsic-size: 200px 200px;
@@ -299,10 +300,14 @@
     padding-top: calc(var(--nav-height) + var(--space-4));
   }
 
-  .ImageGrid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: var(--space-2);
+  .ImageGrid .image-link {
+    max-height: 300px;
   }
+
+  // .ImageGrid {
+  //   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  //   gap: var(--space-2);
+  // }
 
   .pageFiltertab {
     .filterTab {
@@ -318,10 +323,6 @@
   .ImageGrid {
     grid-template-columns: 1fr;
     gap: var(--space-3);
-
-    // .image-card .image-link {
-    //   aspect-ratio: 16 / 9;
-    // }
   }
 }
 
