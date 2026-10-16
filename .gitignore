@@ -1,6 +1,9 @@
 # Dependencies
+
 node_modules/
+
 # Generated files DONT EDIT!
+
 /img/categories.json
 /img/favoriteImages.json
 /img/imageFiles/*
@@ -8,3 +11,4 @@ node_modules/
 /video/favoriteVideos.json
 /video/posts.json
 /video/tags.json
+/scripts/temp/videos/*
