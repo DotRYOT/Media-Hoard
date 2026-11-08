@@ -647,12 +647,15 @@ function renderNextChunk() {
   }
   
   container.appendChild(fragment);
+  const sentinel = document.getElementById(videoLoadSentinelId);
+  if (sentinel) {
+    container.appendChild(sentinel);
+  }
   attachThumbnailFallbacks(container);
   renderedCount = end;
   isRenderingChunk = false;
   
   // Update or remove sentinel based on remaining items
-  const sentinel = document.getElementById(videoLoadSentinelId);
   if (sentinel) {
     if (renderedCount >= activePosts.length) {
       sentinel.remove();
